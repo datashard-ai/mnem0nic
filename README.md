@@ -33,7 +33,7 @@ mnem0nic install
 ```
 
 The first command downloads the latest release, checks its SHA-256 checksum, and puts `mnem0nic` in
-`~/.local/bin`. Set `MNEM0NIC_VERSION=0.1.1` to pin a version, or `MNEM0NIC_INSTALL_DIR` to install
+`~/.local/bin`. Set `MNEM0NIC_VERSION=0.1.2` to pin a version, or `MNEM0NIC_INSTALL_DIR` to install
 somewhere else.
 
 The second command sets mnem0nic up for all your projects, in each CLI that is signed in with its own
@@ -71,15 +71,12 @@ your agent keeps working the way it did.
    mnem0nic import-claude-mem
    ```
 
-   It reads `~/.claude-mem/claude-mem.db` without changing it. It brings over your observations,
-   session summaries, prompts, tool calls and to-do lists, each in the project it belongs to, and
-   redacts the secrets it recognises on the way in. Large histories are quick: about 35,000
-   observations took under 10 seconds in our tests. If you moved claude-mem's data folder, point
-   to the database:
-
-   ```sh
-   mnem0nic import-claude-mem --db /path/to/claude-mem.db
-   ```
+   It finds claude-mem's database where claude-mem keeps it, even if you moved claude-mem's data
+   folder, and reads it without changing it. It brings over your observations, session summaries,
+   prompts, tool calls and to-do lists, each in the project it belongs to, and redacts the secrets
+   it recognises on the way in. Large histories are quick: about 35,000 observations took under
+   10 seconds in our tests. To import a copy kept somewhere else, name it:
+   `mnem0nic import-claude-mem --db /path/to/claude-mem.db`.
 
 3. **Turn claude-mem off,** so that the two don't both take notes:
 

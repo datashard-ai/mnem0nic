@@ -4,6 +4,15 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-10-25
+
+### Changed
+
+- **`mnem0nic import-claude-mem` finds your claude-mem history on its own,** where claude-mem keeps it,
+  even if you moved claude-mem's data folder. `--db` is only needed for a copy kept somewhere else.
+- **Clearer messages:** if there is no claude-mem database, the import says where it looked.
+  `mnem0nic install` points to the step-by-step guide for moving from claude-mem.
+
 ## [0.1.1] - 2026-10-25
 
 First public release.
@@ -25,4 +34,5 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
+[0.1.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.1.2
 [0.1.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.1.1
