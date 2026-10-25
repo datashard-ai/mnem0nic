@@ -33,7 +33,7 @@ mnem0nic install
 ```
 
 The first command downloads the latest release, checks its SHA-256 checksum, and puts `mnem0nic` in
-`~/.local/bin`. Set `MNEM0NIC_VERSION=0.1.2` to pin a version, or `MNEM0NIC_INSTALL_DIR` to install
+`~/.local/bin`. Set `MNEM0NIC_VERSION=0.1.3` to pin a version, or `MNEM0NIC_INSTALL_DIR` to install
 somewhere else.
 
 The second command sets mnem0nic up for all your projects, in each CLI that is signed in with its own
@@ -43,14 +43,15 @@ paid plan:
   (`~/.codex/hooks.json`), after a dated backup of each file;
 - the `mnem0nic` MCP server, added to each CLI for all projects.
 
+If claude-mem's history is on your Mac, `mnem0nic install` offers to import it too (see
+[Moving from claude-mem](#moving-from-claude-mem)).
+
 Restart Claude Code or Codex afterwards. Codex asks you once to trust the new hooks. Running
 `mnem0nic install` again is safe: it replaces its own hooks and leaves everything else as it is.
 
 **Optional:** `mnem0nic embed` downloads a 130 MB embedding model from Hugging Face, once, so that
 search also finds things by meaning, not only by their words.
 
-**Coming from claude-mem?** Bring your history with you: see
-[Moving from claude-mem](#moving-from-claude-mem).
 
 ## Moving from claude-mem
 
@@ -58,23 +59,26 @@ mnem0nic reads claude-mem's database directly, so your past sessions come with y
 same MCP tools by the same names (`mem_search`, `timeline`, `get_observations` and the rest), so
 your agent keeps working the way it did.
 
-1. **Install mnem0nic,** as above:
+1. **Install mnem0nic and import your history,** in one go:
 
    ```sh
    curl -fsSL https://raw.githubusercontent.com/datashard-ai/mnem0nic/main/install.sh | sh
    mnem0nic install
    ```
 
-2. **Import your history:**
+   `mnem0nic install` finds claude-mem's database where claude-mem keeps it, even if you moved
+   claude-mem's data folder, and asks whether to import it: press Enter for yes. Without a terminal
+   to answer, it imports without asking; `--no-import` skips it.
+
+2. **Or import it later,** at any time:
 
    ```sh
    mnem0nic import-claude-mem
    ```
 
-   It finds claude-mem's database where claude-mem keeps it, even if you moved claude-mem's data
-   folder, and reads it without changing it. It brings over your observations, session summaries,
-   prompts, tool calls and to-do lists, each in the project it belongs to, and redacts the secrets
-   it recognises on the way in. Large histories are quick: about 35,000 observations took under
+   The import reads claude-mem's database without changing it. It brings over your observations,
+   session summaries, prompts, tool calls and to-do lists, each in the project it belongs to, and
+   redacts the secrets it recognises on the way in. Large histories are quick: about 35,000 observations took under
    10 seconds in our tests. To import a copy kept somewhere else, name it:
    `mnem0nic import-claude-mem --db /path/to/claude-mem.db`.
 

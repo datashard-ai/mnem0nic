@@ -4,6 +4,15 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.3] - 2026-10-25
+
+### Added
+
+- **`mnem0nic install` brings your claude-mem history over.** When claude-mem's database is on your
+  Mac, it asks whether to import it (Enter means yes), and imports it without asking when there is
+  no terminal to answer. `--no-import` skips it. The import only reads claude-mem's database, and
+  running it again adds only what is new.
+
 ## [0.1.2] - 2026-10-25
 
 ### Changed
@@ -34,5 +43,6 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
+[0.1.3]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.1.3
 [0.1.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.1.2
 [0.1.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.1.1
