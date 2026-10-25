@@ -1,134 +1,168 @@
-# mnem0nic
+<h1 align="center">
+  <br>
+  <a href="https://github.com/datashard-ai/mnem0nic">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.png">
+      <source media="(prefers-color-scheme: light)" srcset="assets/logo-light.png">
+      <img src="assets/logo-light.png" alt="mnem0nic" width="420">
+    </picture>
+  </a>
+</h1>
 
-**Persistent memory for Claude Code and Codex.** mnem0nic records your coding sessions on your own
-machine, writes a short note after every turn, and gives your agent tools to search and resume past
-work, across projects and across both CLIs.
+<h4 align="center">Persistent memory for <a href="https://claude.com/claude-code">Claude Code</a> and <a href="https://developers.openai.com/codex/cli">Codex</a>. Local, one binary, on the plan you already pay for.</h4>
 
-- **One native binary.** No Node.js, no Python, nothing left running when you're idle.
-- **Local.** Your memory lives in a private folder on your Mac. Nothing goes to us: there is no
-  account and no telemetry.
-- **Your own subscription.** Notes are written through the paid plan you already use: your Claude plan
-  for Claude Code, your ChatGPT plan for Codex. Never an API key, so never a per-token bill.
-- **claude-mem compatible.** The same MCP tools by name, and a one-command import of your claude-mem
-  history.
+<p align="center">
+  <a href="https://github.com/datashard-ai/mnem0nic/releases/latest"><img src="https://img.shields.io/github/v/release/datashard-ai/mnem0nic?label=release&color=ea0026" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/macOS-Apple%20silicon-111111?logo=apple" alt="macOS on Apple silicon">
+  <img src="https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Codex-555555" alt="Works with Claude Code and Codex">
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/licence-proprietary-lightgrey" alt="Proprietary licence"></a>
+</p>
 
-[Install](#install) · [Moving from claude-mem](#moving-from-claude-mem) · [How it works](#how-it-works) ·
-[Privacy](#privacy) · [Configuration](#configuration) · [Uninstall](#uninstall) · [Changelog](CHANGELOG.md)
+<p align="center">
+  <img src="assets/install-demo.svg" alt="Installing mnem0nic and importing claude-mem history in the terminal" width="820">
+</p>
 
-## Requirements
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#key-features">Key Features</a> •
+  <a href="#moving-from-claude-mem">Moving from claude-mem</a> •
+  <a href="#how-it-works">How It Works</a> •
+  <a href="#mcp-tools">MCP Tools</a> •
+  <a href="#privacy">Privacy</a> •
+  <a href="#configuration">Configuration</a> •
+  <a href="#troubleshooting">Troubleshooting</a>
+</p>
 
-- A Mac with Apple silicon.
-- At least one of:
-  - **Claude Code**, signed in with a paid Claude plan (Pro, Max, Team or Enterprise);
-  - **Codex**, signed in with a paid ChatGPT plan (Plus, Pro, Business, Enterprise or Edu).
+<p align="center">
+  mnem0nic records your coding sessions on your own Mac, writes a short note after every turn, and gives
+  your agent tools to search and pick up past work, across projects and across both CLIs.
+</p>
 
-mnem0nic works only through these plans. A CLI signed in with an API key, or running on Amazon Bedrock
-or Google Vertex AI, is not set up, and mnem0nic says why.
+---
 
-## Install
+## Quick Start
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/datashard-ai/mnem0nic/main/install.sh | sh
 mnem0nic install
 ```
 
-The first command downloads the latest release, checks its SHA-256 checksum, and puts `mnem0nic` in
-`~/.local/bin`. Set `MNEM0NIC_VERSION=0.1.3` to pin a version, or `MNEM0NIC_INSTALL_DIR` to install
-somewhere else.
+Then restart Claude Code or Codex. That's it.
 
-The second command sets mnem0nic up for all your projects, in each CLI that is signed in with its own
-paid plan:
+- The first command downloads the latest release, checks its SHA-256 checksum and puts `mnem0nic`
+  in `~/.local/bin`.
+- The second sets mnem0nic up for all your projects, in each CLI signed in with its own paid plan,
+  after a dated backup of each settings file it changes.
+- **Coming from claude-mem?** `mnem0nic install` finds your claude-mem history and offers to import
+  it. Press Enter.
 
-- capture hooks in Claude Code's user settings (`~/.claude/settings.json`) and in Codex's
-  (`~/.codex/hooks.json`), after a dated backup of each file;
-- the `mnem0nic` MCP server, added to each CLI for all projects.
+**Requirements:** a Mac with Apple silicon, and at least one of:
 
-If claude-mem's history is on your Mac, `mnem0nic install` offers to import it too (see
-[Moving from claude-mem](#moving-from-claude-mem)).
+- **Claude Code**, signed in with a paid Claude plan (Pro, Max, Team or Enterprise);
+- **Codex**, signed in with a paid ChatGPT plan (Plus, Pro, Business, Enterprise or Edu).
 
-Restart Claude Code or Codex afterwards. Codex asks you once to trust the new hooks. Running
-`mnem0nic install` again is safe: it replaces its own hooks and leaves everything else as it is.
+## Key Features
 
-**Optional:** `mnem0nic embed` downloads a 130 MB embedding model from Hugging Face, once, so that
-search also finds things by meaning, not only by their words.
-
+- 🧠 **Memory across sessions.** A new session starts with the project's recent context, and your
+  agent can look up anything from earlier ones.
+- 📝 **A note after every turn.** A small model writes what was done, learned and decided, so search
+  finds the point, not just the words.
+- 🔍 **Search by words and by meaning,** over notes and the word-for-word conversations.
+- ✅ **To-do lists that last.** Open items are shown at the start of every session until they are
+  done.
+- 🔁 **claude-mem compatible.** The same MCP tools by name, and your claude-mem history imported at
+  install.
+- 🔒 **Local.** Everything stays in a private folder on your Mac. No account, no telemetry, no server
+  of ours.
+- 💳 **Your own subscription.** Notes go through the paid plan you already use: your Claude plan for
+  Claude Code, your ChatGPT plan for Codex. Never an API key, so never a per-token bill.
+- ⚡ **One native binary.** No Node.js, no Python, nothing left running when you're idle.
 
 ## Moving from claude-mem
 
-mnem0nic reads claude-mem's database directly, so your past sessions come with you. It offers the
-same MCP tools by the same names (`mem_search`, `timeline`, `get_observations` and the rest), so
-your agent keeps working the way it did.
+mnem0nic reads claude-mem's database directly, so your past sessions come with you, and your agent
+keeps the same MCP tools by the same names (`mem_search`, `timeline`, `get_observations` and the
+rest).
 
-1. **Install mnem0nic and import your history,** in one go:
+1. **Install, and import in the same step.** `mnem0nic install` finds claude-mem's database where
+   claude-mem keeps it, even if you moved claude-mem's data folder, and asks whether to import it.
+   Press Enter for yes. Without a terminal to answer it imports without asking; `--no-import` skips
+   it.
 
-   ```sh
-   curl -fsSL https://raw.githubusercontent.com/datashard-ai/mnem0nic/main/install.sh | sh
-   mnem0nic install
-   ```
-
-   `mnem0nic install` finds claude-mem's database where claude-mem keeps it, even if you moved
-   claude-mem's data folder, and asks whether to import it: press Enter for yes. Without a terminal
-   to answer, it imports without asking; `--no-import` skips it.
-
-2. **Or import it later,** at any time:
+2. **Or import later,** at any time:
 
    ```sh
    mnem0nic import-claude-mem
    ```
 
-   The import reads claude-mem's database without changing it. It brings over your observations,
-   session summaries, prompts, tool calls and to-do lists, each in the project it belongs to, and
-   redacts the secrets it recognises on the way in. Large histories are quick: about 35,000 observations took under
-   10 seconds in our tests. To import a copy kept somewhere else, name it:
-   `mnem0nic import-claude-mem --db /path/to/claude-mem.db`.
+   It reads claude-mem's database without changing it, and brings over your observations, session
+   summaries, prompts, tool calls and to-do lists, each in the project it belongs to, redacting the
+   secrets it recognises. About 35,000 observations took under 10 seconds in our tests. To import a
+   copy kept somewhere else: `mnem0nic import-claude-mem --db /path/to/claude-mem.db`.
 
-3. **Turn claude-mem off,** so that the two don't both take notes:
+3. **Turn claude-mem off,** so the two don't both take notes:
 
    ```sh
    npx claude-mem uninstall
    ```
 
-   This removes claude-mem's hooks and plugin and stops its background worker. It keeps your data
-   in `~/.claude-mem`. If you'd rather keep claude-mem installed but off, run
-   `claude plugin disable claude-mem@thedotmack` instead. Then restart Claude Code.
+   This removes claude-mem's hooks and plugin and stops its worker, and keeps your data in
+   `~/.claude-mem`. To keep claude-mem installed but off instead:
+   `claude plugin disable claude-mem@thedotmack`. Then restart Claude Code.
 
 4. **Optional: search by meaning.** `mnem0nic embed` downloads the model once and indexes your
    imported history too.
 
-5. **Check it.** In a project you worked on with claude-mem, run
-   `mnem0nic search "a word from an old session"`, or ask your agent what it remembers.
+The import adds only what is new, so you can keep both for a while, import again, then switch. When
+you're happy, delete claude-mem's data with `rm -rf ~/.claude-mem`. Two differences to know: a
+session reads only its own project's memory, and results of Datashard's tools are never stored.
 
-You can run the import again at any time: it adds only what is new. So you can keep both tools for
-a while, import once more, then switch. When you're happy with mnem0nic, delete claude-mem's data
-with `rm -rf ~/.claude-mem`.
+## How It Works
 
-Two differences to know: a session reads only its own project's memory, and results of Datashard's
-tools are never stored.
-
-## How it works
+```mermaid
+flowchart LR
+    A["Claude Code<br/>or Codex"] -- "hooks: start, each turn,<br/>compaction, end" --> B["mnem0nic<br/>on your Mac"]
+    B --> C[("Private store<br/>~/.local/share/mnem0nic")]
+    B -- "one call per turn,<br/>through your own plan" --> D["claude -p or<br/>codex exec"]
+    D -- "observations<br/>and a summary" --> C
+    C -- "MCP tools and<br/>session-start context" --> A
+```
 
 1. **Capture.** Hooks at session start, after each turn, before compaction and at session end record
    the conversation: your prompts, the agent's replies, and its tool calls with their input and
    output. Secrets that mnem0nic recognises (API keys, access tokens, private keys, password
    assignments) are redacted before anything is stored.
-2. **Notes.** After each turn, a small model writes short notes about it: what was done, what was
-   learned, what was decided. Claude Code turns are noted through `claude -p` with Claude Haiku, and
-   Codex turns through `codex exec`, each with that CLI's own login and plan.
-3. **Recall.** At the start of a session, recent context for the project is added. During the
-   session, the MCP tools let the agent search past sessions by words or by meaning, read notes and
-   timelines, and keep to-do lists from one session to the next.
+2. **Notes.** After each turn, a small model writes short notes about it, through the CLI you used and
+   its own plan: Claude Haiku through `claude -p` for Claude Code turns, `codex exec` for Codex turns.
+   Each CLI is checked for its paid plan at install, at every session start and before every note.
+3. **Recall.** A new session starts with recent context for the project. During it, the MCP tools let
+   the agent search past sessions, read notes and timelines, and keep to-do lists.
 
-A background process starts when it is needed. It writes the notes and holds the embedding model,
-and exits after 15 idle minutes. It listens only on `127.0.0.1`, with a private token.
+A background process starts when it is needed, writes the notes, holds the embedding model, and exits
+after 15 idle minutes. It listens only on `127.0.0.1`, with a private token.
 
-### MCP tools
+## MCP Tools
 
-claude-mem's tools, with the same names and parameters: `mem_search`, `save_memory`,
-`important_workflow`, `search`, `timeline`, `get_observations`, `get_tool_uses`, `work_state_write`,
-`work_state_read` and `session_start_context`.
+claude-mem's tools, with the same names and parameters:
 
-mnem0nic's own tools, over the word-for-word conversations: `memory_search`, `memory_get`,
-`memory_sessions`, `memory_resume` and `memory_save`.
+| Tool | What it does |
+|---|---|
+| `mem_search` | Search memory step by step: an index, then context, then the details you pick |
+| `save_memory` | Save a note, decision, correction or handoff of your own |
+| `search`, `timeline`, `get_observations` | Search with filters, see what happened around a note, read notes by id |
+| `get_tool_uses` | Read the original input and output of tool calls already found |
+| `work_state_write`, `work_state_read` | Keep to-do lists and working state across sessions |
+| `session_start_context` | Show the context a new session starts with |
+| `important_workflow` | How to use the tools above, for the agent |
+
+mnem0nic's own tools, over the word-for-word conversations:
+
+| Tool | What it does |
+|---|---|
+| `memory_search` | Search earlier conversations by words and meaning |
+| `memory_get` | Read the messages around a search result |
+| `memory_sessions` | List the project's recent sessions |
+| `memory_save`, `memory_resume` | Save a checkpoint of your work, and resume from it on the same branch |
 
 ## Privacy
 
@@ -136,15 +170,13 @@ mnem0nic's own tools, over the word-for-word conversations: `memory_search`, `me
   by your user account.
 - **What is sent, and where:** after each turn, its request, its tool calls (long input and output
   trimmed) and the agent's reply go to the provider of the CLI you used: Anthropic for Claude Code,
-  OpenAI for Codex. They go through your own login, to the same provider that already handled that
+  OpenAI for Codex. They go through your own login, to the same provider that already handled the
   turn.
 - **What is never sent:** the contents of files the agent only read (their paths are sent), images,
   the results of memory tools, and secrets that redaction recognises.
-- **Nothing goes to Xibit Digital.** There is no account, no telemetry and no server of ours.
+- **Nothing goes to us.** No account, no telemetry, no server of ours.
 - **Datashard:** results of Datashard's tools are never stored. Facts are fetched again when needed,
   with your current access.
-
-To turn the notes off and keep capture and search, see [Configuration](#configuration).
 
 ## Configuration
 
@@ -160,28 +192,27 @@ parallel = 3                    # note calls at once, from 1 to 8
 
 Environment variables take precedence: `MNEM0NIC_OBSERVER_CLIENT`, `MNEM0NIC_OBSERVER_MODEL`,
 `MNEM0NIC_OBSERVER_CODEX_MODEL` and `MNEM0NIC_OBSERVER_PARALLEL`. `MNEM0NIC_HOME` moves the memory
-folder.
+folder. For the installer, `MNEM0NIC_VERSION=0.1.3` pins a version and `MNEM0NIC_INSTALL_DIR` sets
+the folder.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `mnem0nic install` | Set up the hooks and MCP server for Claude Code and Codex |
+| `mnem0nic install [--no-import]` | Set up the hooks and MCP server, and offer to import claude-mem's history |
 | `mnem0nic uninstall [--purge]` | Remove them; `--purge` also deletes your memory |
 | `mnem0nic search "words"` | Search this project's sessions from the terminal |
 | `mnem0nic sessions` | List this project's recent sessions |
 | `mnem0nic embed` | Download the embedding model, once, for search by meaning |
 | `mnem0nic import-claude-mem` | Import your claude-mem history |
 | `mnem0nic daemon status` | Show the background process |
-| `mnem0nic --version` | Show the version |
 
 `mnem0nic help` lists every command.
 
-## Upgrade
+## Upgrade and Uninstall
 
-Run the install command again, then `mnem0nic install`. Your memory and settings are kept.
-
-## Uninstall
+Upgrade by running the install command again, then `mnem0nic install`. Your memory and settings are
+kept.
 
 ```sh
 mnem0nic uninstall            # removes the hooks and MCP server, keeps your memory
@@ -192,21 +223,24 @@ rm ~/.local/bin/mnem0nic
 ## Troubleshooting
 
 - **"mnem0nic is off in this session"** at the start of a session: that CLI isn't signed in with a paid
-  plan of its own. The message says what to do; after that, start a new session.
+  plan of its own. The message says what to do; then start a new session.
 - **`command not found: mnem0nic`:** `~/.local/bin` isn't on your `PATH`. Add it with
   `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc`, then open a new terminal.
 - **macOS blocks the program** after a download from the releases page in a browser: use the install
-  command above, or run `xattr -d com.apple.quarantine ~/.local/bin/mnem0nic` once.
+  command, or run `xattr -d com.apple.quarantine ~/.local/bin/mnem0nic` once.
 - **Notes don't appear:** check `mnem0nic daemon status`, and that `claude` or `codex` runs in your
   terminal.
 
 ## Support
 
 Report bugs and ask questions in [Issues](https://github.com/datashard-ai/mnem0nic/issues). Report
-security problems privately, as described in [SECURITY.md](SECURITY.md).
+security problems privately, as [SECURITY.md](SECURITY.md) describes. Release notes are in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Licence
 
 mnem0nic is proprietary software. © 2026 Xibit Digital. All rights reserved. Use is subject to
 [LICENSE.md](LICENSE.md). It includes open-source components, listed with their licences in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+<p align="center"><sub>mnem0nic, by Xibit Digital · <a href="https://datashard.ai/mnem0nic">datashard.ai/mnem0nic</a></sub></p>
