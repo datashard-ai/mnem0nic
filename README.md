@@ -12,8 +12,8 @@ work, across projects and across both CLIs.
 - **claude-mem compatible.** The same MCP tools by name, and a one-command import of your claude-mem
   history.
 
-[Install](#install) · [How it works](#how-it-works) · [Privacy](#privacy) ·
-[Configuration](#configuration) · [Uninstall](#uninstall) · [Changelog](CHANGELOG.md)
+[Install](#install) · [Moving from claude-mem](#moving-from-claude-mem) · [How it works](#how-it-works) ·
+[Privacy](#privacy) · [Configuration](#configuration) · [Uninstall](#uninstall) · [Changelog](CHANGELOG.md)
 
 ## Requirements
 
@@ -49,9 +49,60 @@ Restart Claude Code or Codex afterwards. Codex asks you once to trust the new ho
 **Optional:** `mnem0nic embed` downloads a 130 MB embedding model from Hugging Face, once, so that
 search also finds things by meaning, not only by their words.
 
-**Coming from claude-mem?** `mnem0nic import-claude-mem` reads your claude-mem history (without
-changing it) and adds it to mnem0nic. You can run it again to add anything new. Then turn the
-claude-mem plugin off in Claude Code (`/plugin`), so your notes aren't taken twice.
+**Coming from claude-mem?** Bring your history with you: see
+[Moving from claude-mem](#moving-from-claude-mem).
+
+## Moving from claude-mem
+
+mnem0nic reads claude-mem's database directly, so your past sessions come with you. It offers the
+same MCP tools by the same names (`mem_search`, `timeline`, `get_observations` and the rest), so
+your agent keeps working the way it did.
+
+1. **Install mnem0nic,** as above:
+
+   ```sh
+   curl -fsSL https://raw.githubusercontent.com/datashard-ai/mnem0nic/main/install.sh | sh
+   mnem0nic install
+   ```
+
+2. **Import your history:**
+
+   ```sh
+   mnem0nic import-claude-mem
+   ```
+
+   It reads `~/.claude-mem/claude-mem.db` without changing it. It brings over your observations,
+   session summaries, prompts, tool calls and to-do lists, each in the project it belongs to, and
+   redacts the secrets it recognises on the way in. Large histories are quick: about 35,000
+   observations took under 10 seconds in our tests. If you moved claude-mem's data folder, point
+   to the database:
+
+   ```sh
+   mnem0nic import-claude-mem --db /path/to/claude-mem.db
+   ```
+
+3. **Turn claude-mem off,** so that the two don't both take notes:
+
+   ```sh
+   npx claude-mem uninstall
+   ```
+
+   This removes claude-mem's hooks and plugin and stops its background worker. It keeps your data
+   in `~/.claude-mem`. If you'd rather keep claude-mem installed but off, run
+   `claude plugin disable claude-mem@thedotmack` instead. Then restart Claude Code.
+
+4. **Optional: search by meaning.** `mnem0nic embed` downloads the model once and indexes your
+   imported history too.
+
+5. **Check it.** In a project you worked on with claude-mem, run
+   `mnem0nic search "a word from an old session"`, or ask your agent what it remembers.
+
+You can run the import again at any time: it adds only what is new. So you can keep both tools for
+a while, import once more, then switch. When you're happy with mnem0nic, delete claude-mem's data
+with `rm -rf ~/.claude-mem`.
+
+Two differences to know: a session reads only its own project's memory, and results of Datashard's
+tools are never stored.
 
 ## How it works
 
