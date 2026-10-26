@@ -53,7 +53,8 @@ Then restart Claude Code or Codex. That's it.
 - The first command downloads the latest release, checks its SHA-256 checksum and puts `mnem0nic`
   in `~/.local/bin`.
 - The second sets mnem0nic up for all your projects, in each CLI signed in with its own paid plan,
-  after a dated backup of each settings file it changes.
+  after a dated backup of each settings file it changes, and downloads the search model (130 MB, once)
+  for search by meaning.
 - **Coming from claude-mem?** `mnem0nic install` finds your claude-mem history and offers to import
   it. Press Enter.
 
@@ -90,9 +91,10 @@ rest).
 1. **Install, and import in the same step.** `mnem0nic install` finds claude-mem's database where
    claude-mem keeps it, even if you moved claude-mem's data folder, and asks whether to import it.
    Press Enter for yes. Without a terminal to answer it imports without asking; `--no-import` skips
-   it. Once it's imported, installing again (an upgrade) doesn't ask again.
+   it. Once it's imported, installing again (an upgrade) doesn't ask again. If you answer no, the
+   next install asks again.
 
-2. **Or import later,** at any time:
+2. **If you skipped it, the import stopped, or you kept claude-mem running:**
 
    ```sh
    mnem0nic import-claude-mem
@@ -113,8 +115,8 @@ rest).
    `~/.claude-mem`. To keep claude-mem installed but off instead:
    `claude plugin disable claude-mem@thedotmack`. Then restart Claude Code.
 
-4. **Optional: search by meaning.** `mnem0nic embed` downloads the model once and indexes your
-   imported history too.
+4. **Search by meaning** comes with install: it downloads the search model once and indexes your
+   imported history too. With `--no-model`, `mnem0nic embed` does it later.
 
 The import adds only what is new, so you can keep both for a while, import again, then switch. When
 you're happy, delete claude-mem's data with `rm -rf ~/.claude-mem`. Two differences to know: a
@@ -226,10 +228,20 @@ client = "off"                  # turn the notes off; capture and search keep wo
 model = "claude-haiku-5-5"      # the model for Claude Code turns
 codex_model = "gpt-6-luna"      # the model for Codex turns
 parallel = 3                    # note calls at once, from 1 to 8
+
+[search]
+semantic_inject = true          # past work on every prompt; off by default
+semantic_inject_limit = 5       # how many notes, from 1 to 20
 ```
 
+With `semantic_inject` on, every prompt of 20 characters or more reaches Claude with the project's
+best-matching notes, as claude-mem's `CLAUDE_MEM_SEMANTIC_INJECT` does, so it sees past work before
+it starts. The notes go to Claude Code or Codex with the prompt. It works best with search by
+meaning (`mnem0nic embed`); without it, it hands over the notes that share words with the prompt.
+
 Environment variables take precedence: `MNEM0NIC_OBSERVER_CLIENT`, `MNEM0NIC_OBSERVER_MODEL`,
-`MNEM0NIC_OBSERVER_CODEX_MODEL` and `MNEM0NIC_OBSERVER_PARALLEL`. `MNEM0NIC_HOME` moves the memory
+`MNEM0NIC_OBSERVER_CODEX_MODEL`, `MNEM0NIC_OBSERVER_PARALLEL`, `MNEM0NIC_SEMANTIC_INJECT` and
+`MNEM0NIC_SEMANTIC_INJECT_LIMIT`. `MNEM0NIC_HOME` moves the memory
 folder. For the installer, `MNEM0NIC_VERSION=0.2.0` pins a version and `MNEM0NIC_INSTALL_DIR` sets
 the folder.
 
@@ -237,11 +249,11 @@ the folder.
 
 | Command | What it does |
 |---|---|
-| `mnem0nic install [--no-import]` | Set up the hooks and MCP server, and offer to import claude-mem's history |
+| `mnem0nic install [--no-import] [--no-model]` | Set up the hooks and MCP server, download the search model, and offer to import claude-mem's history |
 | `mnem0nic uninstall [--purge]` | Remove them; `--purge` also deletes your memory |
 | `mnem0nic search "words"` | Search this project's sessions from the terminal |
 | `mnem0nic sessions` | List this project's recent sessions |
-| `mnem0nic embed` | Download the embedding model, once, for search by meaning |
+| `mnem0nic embed` | Download the search model if install didn't, and index what is new |
 | `mnem0nic import-claude-mem` | Import your claude-mem history |
 | `mnem0nic daemon status` | Show the background process |
 | `mnem0nic pair` | Pair this Mac with another of yours, with a six-digit code |
@@ -253,8 +265,9 @@ the folder.
 
 ## Upgrade and Uninstall
 
-Upgrade by running the install command again, then `mnem0nic install`. Your memory and settings are
-kept.
+Upgrade by running the install command again, then `mnem0nic install`, then restart Claude Code or
+Codex: a session keeps the mnem0nic MCP server it started with until you restart it. Your memory,
+settings and pairings are kept.
 
 ```sh
 mnem0nic uninstall            # removes the hooks and MCP server, keeps your memory

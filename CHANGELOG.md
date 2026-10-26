@@ -4,6 +4,22 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.2] - 2026-10-26
+
+### Added
+
+- **Past work on every prompt, as claude-mem's `CLAUDE_MEM_SEMANTIC_INJECT`.** With
+  `semantic_inject = true` under `[search]` in `config.toml`, every prompt of 20 characters or more
+  reaches Claude Code or Codex with the project's best-matching notes, up to `semantic_inject_limit`
+  (5 by default), so the agent sees past work before it starts. Off by default. `mnem0nic install`
+  adds the hook; run it again after upgrading.
+
+### Changed
+
+- **Search by meaning works from install.** `mnem0nic install` now downloads the search model (130 MB,
+  once) and indexes your history in the background; `--no-model` skips it, and `mnem0nic embed` still
+  fetches it later. Without a network, install finishes and tells you to run `mnem0nic embed`.
+
 ## [0.2.1] - 2026-10-26
 
 ### Fixed
@@ -89,6 +105,7 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
+[0.2.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.2
 [0.2.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.1
 [0.2.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.0
 [0.1.3]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.1.3
