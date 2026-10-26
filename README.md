@@ -90,7 +90,7 @@ rest).
 1. **Install, and import in the same step.** `mnem0nic install` finds claude-mem's database where
    claude-mem keeps it, even if you moved claude-mem's data folder, and asks whether to import it.
    Press Enter for yes. Without a terminal to answer it imports without asking; `--no-import` skips
-   it.
+   it. Once it's imported, installing again (an upgrade) doesn't ask again.
 
 2. **Or import later,** at any time:
 

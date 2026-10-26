@@ -4,6 +4,28 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-10-26
+
+### Fixed
+
+- **claude-mem history imported on two paired Macs is no longer kept twice.** 0.2.0 gave each
+  imported record a new id on each Mac, so two Macs that had both imported the same claude-mem
+  history each held all of it twice after their first sync. An imported record's id now comes from
+  the record itself, so it is the same on every Mac. The first time mnem0nic runs after the upgrade,
+  it removes the copies already doubled in the background, keeping each Mac's own. Before it removes
+  anything it copies the search index to `index/metadata.before-0.2.1.sqlite` in its folder, which
+  you can delete once you're happy. Your record files are not changed.
+- **A Mac restored from a backup stays paired.** If it wrote more after the restore than it had lost,
+  0.2.0 took it for a copy of itself, gave it a new identity and unpaired it from your other Macs.
+- `mnem0nic reindex` works on a store holding a project from your other Mac that was never opened
+  on this one, and keeps this Mac's own copy of each record.
+- Session start no longer says sync with your other Mac has failed while it works: the Mac that
+  answers no longer saves the other's passing port as its address.
+- Session start returns its context even when a sync round cannot be queued.
+- Looking for your other Mac on the network takes 3 seconds; it now happens at most once every 30
+  seconds instead of on every hook.
+- `mnem0nic install` asks to import claude-mem's history only until it has been imported.
+
 ## [0.2.0] - 2026-10-26
 
 ### Added
@@ -67,6 +89,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
+[0.2.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.1
+[0.2.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.0
 [0.1.3]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.1.3
 [0.1.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.1.2
 [0.1.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.1.1
