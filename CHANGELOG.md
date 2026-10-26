@@ -4,6 +4,30 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-10-26
+
+### Added
+
+- **Your Macs in step.** Run `mnem0nic pair` on two of your Macs and type the six-digit code one of
+  them shows. From then on, whenever both are on the same network, they sync your memory between
+  them: notes, session summaries, prompts, to-do lists, checkpoints, and Claude Code's own memory
+  notes. There is no server and no account; only Macs you paired take part, and the link between
+  them is encrypted.
+- **Catching up.** Both Macs keep working while apart and catch up when they meet again, with nothing
+  sent twice. A record that cannot be applied is set aside after three tries instead of blocking the
+  rest. If the same Claude Code note was edited on both, the later edit is kept, the other stays in
+  its history (`mnem0nic notes history NAME`), and the next session start says so.
+- **New commands:** `mnem0nic pair`, `devices`, `unpair`, `sync status`, `sync now`,
+  `notes history` and `project merge`.
+
+### Changed
+
+- **A project is named after its Git remote** (`org/repo`), so it keeps its memory when its folder
+  moves, every clone and worktree of a repository shares it, and it has the same name on each of your
+  Macs. Memory recorded under the old folder-based names stays where it was and is still found.
+- After pairing, macOS keeps the sync port open for mnem0nic and starts it only when your other Mac
+  connects; nothing runs while you're idle. `mnem0nic uninstall` removes it.
+
 ## [0.1.3] - 2026-10-25
 
 ### Added

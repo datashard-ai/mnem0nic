@@ -27,6 +27,7 @@
   <a href="#key-features">Key Features</a> •
   <a href="#moving-from-claude-mem">Moving from claude-mem</a> •
   <a href="#how-it-works">How It Works</a> •
+  <a href="#syncing-your-macs">Syncing Your Macs</a> •
   <a href="#mcp-tools">MCP Tools</a> •
   <a href="#privacy">Privacy</a> •
   <a href="#configuration">Configuration</a> •
@@ -72,8 +73,10 @@ Then restart Claude Code or Codex. That's it.
   done.
 - 🔁 **claude-mem compatible.** The same MCP tools by name, and your claude-mem history imported at
   install.
-- 🔒 **Local.** Everything stays in a private folder on your Mac. No account, no telemetry, no server
-  of ours.
+- 🔄 **Your Macs in step.** Pair your Macs once with a six-digit code, and your memory follows you
+  between them on your own network.
+- 🔒 **Local.** Everything stays in private folders on your own Macs. No account, no telemetry, no
+  server of ours.
 - 💳 **Your own subscription.** Notes go through the paid plan you already use: your Claude plan for
   Claude Code, your ChatGPT plan for Codex. Never an API key, so never a per-token bill.
 - ⚡ **One native binary.** No Node.js, no Python, nothing left running when you're idle.
@@ -141,6 +144,40 @@ flowchart LR
 A background process starts when it is needed, writes the notes, holds the embedding model, and exits
 after 15 idle minutes. It listens only on `127.0.0.1`, with a private token.
 
+## Syncing Your Macs
+
+Run this on two of your Macs, on the same network:
+
+```sh
+mnem0nic pair
+```
+
+The first shows a six-digit code; type it on the second. The code never travels over the network,
+and a wrong code ends the pairing. From then on, whenever both Macs are on the same network, they sync
+in the background.
+
+- **What syncs:** notes, session summaries, prompts, to-do lists, checkpoints, and Claude Code's own
+  memory notes for the project. Word-for-word conversations, tool calls and the search index stay on
+  the Mac that recorded them. A prompt longer than 200,000 bytes is cut before it is sent.
+- **How:** the Macs find each other over Bonjour, prove who they are with the keys they swapped at
+  pairing, and sync over an encrypted link. A machine you didn't pair is refused before anything is
+  sent.
+- **Projects match by their Git remote,** so a repository checked out in different folders on each Mac
+  is the same project. A folder outside Git matches by its name.
+- **Apart, then together:** both Macs keep working while apart and catch up when they meet. If the same
+  Claude Code note was edited on both, the later edit wins, the other stays in its history, and the
+  next session start tells you.
+- **While you're idle,** macOS keeps the sync port open for mnem0nic and starts it only when your other
+  Mac connects.
+
+```sh
+mnem0nic devices                    # your paired Macs, and when each was last seen
+mnem0nic sync status                # how far behind each one is
+mnem0nic sync now                   # sync at once
+mnem0nic unpair "Mac name"          # stop syncing with one
+mnem0nic notes history NAME         # every version of a Claude Code note
+```
+
 ## MCP Tools
 
 claude-mem's tools, with the same names and parameters:
@@ -166,8 +203,9 @@ mnem0nic's own tools, over the word-for-word conversations:
 
 ## Privacy
 
-- **What stays on your Mac:** everything mnem0nic records, in `~/.local/share/mnem0nic`, readable only
-  by your user account.
+- **What stays on your Macs:** everything mnem0nic records, in `~/.local/share/mnem0nic`, readable
+  only by your user account. With paired Macs, the records listed under
+  [Syncing Your Macs](#syncing-your-macs) go between them, encrypted, and nowhere else.
 - **What is sent, and where:** after each turn, its request, its tool calls (long input and output
   trimmed) and the agent's reply go to the provider of the CLI you used: Anthropic for Claude Code,
   OpenAI for Codex. They go through your own login, to the same provider that already handled the
@@ -192,7 +230,7 @@ parallel = 3                    # note calls at once, from 1 to 8
 
 Environment variables take precedence: `MNEM0NIC_OBSERVER_CLIENT`, `MNEM0NIC_OBSERVER_MODEL`,
 `MNEM0NIC_OBSERVER_CODEX_MODEL` and `MNEM0NIC_OBSERVER_PARALLEL`. `MNEM0NIC_HOME` moves the memory
-folder. For the installer, `MNEM0NIC_VERSION=0.1.3` pins a version and `MNEM0NIC_INSTALL_DIR` sets
+folder. For the installer, `MNEM0NIC_VERSION=0.2.0` pins a version and `MNEM0NIC_INSTALL_DIR` sets
 the folder.
 
 ## Commands
@@ -206,6 +244,10 @@ the folder.
 | `mnem0nic embed` | Download the embedding model, once, for search by meaning |
 | `mnem0nic import-claude-mem` | Import your claude-mem history |
 | `mnem0nic daemon status` | Show the background process |
+| `mnem0nic pair` | Pair this Mac with another of yours, with a six-digit code |
+| `mnem0nic devices`, `mnem0nic unpair NAME` | List your paired Macs; stop syncing with one |
+| `mnem0nic sync status`, `mnem0nic sync now` | See how sync is doing; sync at once |
+| `mnem0nic project merge OLD NEW` | Read a project's older memory as part of another |
 
 `mnem0nic help` lists every command.
 
@@ -230,6 +272,9 @@ rm ~/.local/bin/mnem0nic
   command, or run `xattr -d com.apple.quarantine ~/.local/bin/mnem0nic` once.
 - **Notes don't appear:** check `mnem0nic daemon status`, and that `claude` or `codex` runs in your
   terminal.
+- **Your Macs don't sync:** they must be on the same network, and some guest or office networks block
+  the Bonjour messages they find each other with. `mnem0nic sync status` shows when each was last
+  seen. macOS may ask once whether mnem0nic may use the local network: allow it.
 
 ## Support
 
