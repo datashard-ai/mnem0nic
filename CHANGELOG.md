@@ -4,6 +4,27 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-10-28
+
+### Added
+
+- **A small re-ranker puts the best results of a question in order.** When you ask for five
+  results or more and your question is six words or more with nothing that looks like code or a
+  path, a small model (TinyBERT, 18 MB, run by the memory daemon) reads the first ten results with
+  your question and puts the best match first. It applies to `search`, `mem_search` and the past
+  work handed over on every prompt. `mnem0nic install` and `mnem0nic embed` download it once, next
+  to the search model; if that fails you are told, and search works without it. Turn it off with
+  `rerank = false` under `[search]` in `config.toml` or `MNEM0NIC_RERANK=false`; an older mnem0nic
+  rejects a `config.toml` that holds that key until the line is removed.
+
+### Changed
+
+- **Search puts the notes that match your words first.** Notes found by your words keep the first
+  places, and the two nearest in meaning take the last two of the results (the first ten at most), so the note you meant
+  comes first more often. It applies to `search`, `mem_search`, `memory_search` and the past work
+  handed over on every prompt, whenever five results or more are asked for; fewer results keep the
+  earlier order. Nothing is downloaded and no setting changes.
+
 ## [0.2.2] - 2026-10-26
 
 ### Added
@@ -105,6 +126,7 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
+[0.3.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.0
 [0.2.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.2
 [0.2.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.1
 [0.2.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.0
