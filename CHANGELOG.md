@@ -4,6 +4,23 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-10-28
+
+### Fixed
+
+- **A model download that stops no longer hangs `mnem0nic install` or `mnem0nic embed`.** If the
+  search model or the re-ranker sends nothing for 60 seconds, the download is given up with a
+  message. `mnem0nic install` carries on without it; run `mnem0nic embed` later to try again, and a
+  search model download that was cut picks up where it stopped.
+- **A to-do you updated after a `mnem0nic reindex` could keep showing its old status.** Reindex gave
+  entries written before 0.2.0 an ordering number above every newer one, so a newer update to the same
+  item lost to them. Reindex now keeps later updates on top. An update that was already hidden stays
+  hidden until you write it again.
+- **The background sync log no longer fills with lines about your own Mac.** Each Mac found itself on
+  the network and logged "refused a machine that is not paired". It now ignores itself, so such a
+  line in that log means some other machine tried to connect and is not paired. Lines already in
+  the log stay.
+
 ## [0.3.0] - 2026-10-28
 
 ### Added
@@ -126,6 +143,7 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
+[0.3.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.1
 [0.3.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.0
 [0.2.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.2
 [0.2.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.1
