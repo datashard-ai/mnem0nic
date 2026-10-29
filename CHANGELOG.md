@@ -4,6 +4,74 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-10-29
+
+### Added
+
+- **More secrets are redacted.** Temporary AWS key ids (`ASIA…`), the value after
+  `AWS_SECRET_ACCESS_KEY` or `AWS_SESSION_TOKEN`, Slack `xapp-` and `xoxe-` tokens, Google API keys,
+  claude-mem's own keys, PGP private key blocks, the credential in any
+  `Authorization` header (Basic and Token as well as Bearer), `Cookie` and `Set-Cookie` values, and the
+  user and password in a URL. A `password` value of four characters is now taken (a bare number needs six
+  digits, so `password=1234` stays as it is and `"1234"` in quotes is redacted); a quoted value is
+  taken whole, spaces and all; and secrets are found inside the JSON of a tool call, and after a line
+  break in it.
+- **A `[redaction]` section in `config.toml`.** `generic` switches on two patterns that go by the name
+  alone (`generic_password` for names such as `DB_PASSWORD`, `generic_token` for names such as
+  `NPM_TOKEN`), `disabled` switches built-in patterns off by name, `custom` adds your own as
+  `{ name, regex }`, and `log_matches` keeps counts. `MNEM0NIC_REDACT_GENERIC` and
+  `MNEM0NIC_REDACT_LOG_MATCHES` take precedence over the file; a variable set in your shell does not
+  reach an import that an already-running background process performs, so put the setting in
+  `config.toml`. The generic patterns are off by default, so `NPM_TOKEN=…` and `DB_PASSWORD=…` are
+  still stored as written until you switch them on.
+  - A mistyped key, a `custom` entry without a name and a regex, a name in `disabled` that is not a
+    built-in, and a custom pattern whose name or regex does not work are each skipped with a warning on
+    stderr, and the rest of the section applies. A typo cannot switch a built-in pattern off, and a
+    custom regex that stops compiling keeps the last version of its name that worked.
+  - A section with a value of the wrong type, or a `config.toml` that cannot be read or is not valid
+    TOML, is not used: the settings that last loaded without a warning stay in force (kept in
+    `redaction.last-good.toml` in the memory folder), or the built-in patterns if there are none.
+  - An older mnem0nic rejects a `config.toml` with this section and cannot look up the project until
+    it is removed.
+  - A hook or command reads the section the first time it redacts something. The background process
+    reads it at the start of each claude-mem import; the memory server reads it when it first saves a
+    note and keeps those settings, so restart Claude Code or Codex after a change.
+- **A match log.** With `log_matches` on, `redact.log` in the memory folder gets a `pattern,count` line
+  for each replacement, never what was found. It is readable only by you and stops growing past 1 MiB.
+
+### Changed
+
+- **A redacted secret is now marked `<redacted type='NAME'/>`,** where `NAME` is the pattern that
+  found it, instead of `[redacted]`. The notes model is told what the marker means. Records stored
+  before this keep `[redacted]` and any secret an earlier version let through; they are not
+  rewritten. What a paired Mac sends you is stored as that Mac sent it.
+- **A prompt that is only a `<task-notification>` block is no longer stored,** and gets no note. It
+  is text a background agent sends back to the agent, not something you typed. The replies and tool
+  calls after one are still stored.
+- **Imported claude-mem records keep the ids 0.3.2 gave them,** although the new patterns change the
+  text they hold. Update both paired Macs together: a Mac still on 0.3.2 can hold such a record twice
+  when an updated Mac sends it one that the new patterns changed, and a copy made that way stays after
+  the Mac is updated.
+
+### Known limits
+
+- A secret that is a bare number in JSON, such as `{"token": 12345678}`, is replaced by a marker, and
+  the marker is not a JSON number, so the text is not valid JSON afterwards, as before. In a note's
+  `metadata` that drops the note's `metadata`.
+- Redaction does not cover `work_state_write`, checkpoints, or Claude Code's memory notes synced
+  between your Macs.
+- A single prompt, reply or tool input longer than 1,048,576 UTF-16 code units is not scanned: it is
+  stored as the marker `<redacted type='oversize'/>` alone, so a very large paste is not kept.
+
+### Fixed
+
+- **A secret across the cut in a tool call was stored half kept.** Tool-call text was cut to 300
+  characters before it was redacted, so a secret that straddled the cut was partly stored, and a
+  private key whose last line fell past the cut was stored as raw key text. It is now redacted before
+  it is cut.
+- A test only: `an_observer_job_killed_mid_call_resumes_without_duplicate_notes` no longer races on its
+  fake `claude`'s marker file (it killed the daemon before the fake had removed the marker).
+
 ## [0.3.2] - 2026-10-29
 
 ### Changed
@@ -158,6 +226,7 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
+[0.4.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.4.0
 [0.3.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.2
 [0.3.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.1
 [0.3.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.0

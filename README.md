@@ -30,6 +30,7 @@
   <a href="#syncing-your-macs">Syncing Your Macs</a> •
   <a href="#mcp-tools">MCP Tools</a> •
   <a href="#privacy">Privacy</a> •
+  <a href="#redaction">Redaction</a> •
   <a href="#configuration">Configuration</a> •
   <a href="#troubleshooting">Troubleshooting</a>
 </p>
@@ -136,7 +137,9 @@ flowchart LR
 1. **Capture.** Hooks at session start, after each turn, before compaction and at session end record
    the conversation: your prompts, the agent's replies, and its tool calls with their input and
    output. Secrets that mnem0nic recognises (API keys, access tokens, private keys, password
-   assignments) are redacted before anything is stored.
+   assignments and more: see [Redaction](#redaction)) are replaced before anything is stored. A
+   prompt that is only a `<task-notification>` block, which a background agent sends back to the agent
+   and you never typed, is not stored.
 2. **Notes.** After each turn, a small model writes short notes about it, through the CLI you used and
    its own plan: Claude Haiku through `claude -p` for Claude Code turns, `codex exec` for Codex turns.
    Each CLI is checked for its paid plan at install, at every session start and before every note.
@@ -218,6 +221,85 @@ mnem0nic's own tools, over the word-for-word conversations:
 - **Datashard:** results of Datashard's tools are never stored. Facts are fetched again when needed,
   with your current access.
 
+## Redaction
+
+Before anything is stored, mnem0nic replaces each secret it recognises with
+`<redacted type='NAME'/>`, where `NAME` says what kind of secret it was. It does this for the
+conversations it captures, for notes you save with `save_memory`, and for history imported from
+claude-mem. Text is redacted before it is cut to its stored length, so a secret near the cut is not
+half kept. What a paired Mac sends you is stored as that Mac sent it. Older records show
+`[redacted]` instead, and are not rewritten: a secret that an earlier version let through stays where
+it is.
+
+**On by default:**
+
+| Name | What it covers |
+|---|---|
+| `aws_access_key` | AWS access key ids, permanent (`AKIA…`) and temporary (`ASIA…`) |
+| `aws_secret_key`, `aws_session_token` | The value after `AWS_SECRET_ACCESS_KEY` or `SecretAccessKey`, and after `AWS_SESSION_TOKEN` or `SessionToken` |
+| `github_pat`, `anthropic_key`, `openai_key`, `stripe_key`, `google_api_key`, `slack_token` | Keys and tokens with a known prefix, including Slack `xapp-` and `xoxe-` |
+| `jwt`, `claude_mem_key` | JSON web tokens, and claude-mem's own keys |
+| `private_key_pem` | A whole private key block, PGP too |
+| `bearer_token`, `authorization` | A Bearer token, and the credential in any `Authorization` header (Basic, Token and the rest; the scheme word stays) |
+| `cookie` | The value of a `Cookie` or `Set-Cookie` header |
+| `url_credentials` | The user and password in a URL or connection string |
+| `assigned_secret` | The value after `password`, `passwd`, `secret`, `token`, `api_key`, `access_key` or `client_secret`, with `=` or `:`, in plain text or inside a tool call's JSON. Six characters or more (four for a password; a bare number needs six digits, so `password=1234` stays as it is, while `"1234"` in quotes is redacted); a quoted value is taken whole, spaces and all |
+
+**Off by default.** Two more patterns go by the name alone, with no known prefix to go on, so they are
+less certain and you switch them on yourself: `generic_password` (names ending in `password`,
+`passwd` or `_pwd`, such as `DB_PASSWORD=`) and `generic_token` (names ending in `_token`, `_secret`
+or `_api_key`, such as `NPM_TOKEN=`, and a few config-file shapes such as `--token` flags and `token:`
+lines). Until you switch them on, `NPM_TOKEN=…` and `DB_PASSWORD=…` are stored as written.
+
+Redaction is pattern matching: it catches the shapes above, not every secret. It does not cover
+to-do lists written with `work_state_write`, checkpoints, or Claude Code's memory notes synced between
+your Macs. A single field longer than 1,048,576 UTF-16 code units (about a million characters) is
+replaced whole by `<redacted type='oversize'/>`.
+
+To change what is redacted, add a `[redaction]` section to `config.toml`:
+
+```toml
+[redaction]
+generic = true                  # also use the two patterns that go by the name alone
+disabled = ["cookie"]           # built-in patterns to switch off, by name
+log_matches = true              # count matches in redact.log
+custom = [
+  { name = "company_token", regex = "INTERNAL-[A-Z0-9]{8}" },
+]
+```
+
+- **`custom`** patterns run before the built-in ones, once, on the text as it arrives. A name is 1 to
+  64 letters, digits or `_`, and appears in the marker. The regex is Rust's [regex syntax](https://docs.rs/regex), so no look-around.
+- **`MNEM0NIC_REDACT_GENERIC`** and **`MNEM0NIC_REDACT_LOG_MATCHES`** do the same as `generic` and
+  `log_matches` and take precedence over the file. `true`, `on`, `yes` or `1` turn them on, a blank
+  value counts as not set, and any other value turns them off. A variable set in your shell does not
+  reach an import that an already-running background process performs; put the setting in
+  `config.toml`.
+- **Mistakes.** A mistyped key, a `custom` entry without a name and a regex, a name in `disabled`
+  that is not a built-in, and a custom pattern whose name or regex does not work are each skipped, with
+  a warning on stderr (the hook's or the memory server's). The rest of the section applies, and a typo
+  cannot switch a built-in pattern off. A custom regex that does not compile keeps the last version of
+  the same name that worked, if there was one.
+- **A section that cannot be used.** A value of the wrong type (`generic = 7`), or a `config.toml`
+  that cannot be read or is not valid TOML, is not used at all. mnem0nic keeps the settings that last
+  loaded without a warning, which it saves in `redaction.last-good.toml` in the memory folder (only you
+  can read it), or the built-in patterns if there are none, and says so on stderr. A `config.toml`
+  that is missing means the built-in patterns, and leaves the saved copy as it is.
+- **The match log.** With `log_matches` on, mnem0nic adds a `pattern,count` line to `redact.log` in
+  the memory folder each time it replaces something. It never writes what it found. Only you can read
+  the file, and it stops growing past 1 MiB. It shows which patterns fire and how often, the generic
+  ones too once they are on.
+- **When a change takes effect.** Hooks and commands read `[redaction]` the first time they redact
+  something, and a hook or command that redacts nothing reads nothing. The background process reads
+  it at the start of each claude-mem import, with the environment it was started with; its other jobs
+  redact nothing. The memory server reads it when it first saves a note and keeps those settings, so
+  restart Claude Code or Codex after a change.
+- **Older versions.** An older mnem0nic rejects a `config.toml` that has a `[redaction]` section, and
+  cannot look up the project until the section is removed. Without the section, nothing changes.
+- **Paired Macs.** Update both together. A Mac still on an older version can hold a claude-mem record
+  twice when an updated Mac sends it one that the new patterns changed, and a copy made that way
+  stays after the Mac is updated.
+
 ## Configuration
 
 Settings live in `~/.local/share/mnem0nic/config.toml`:
@@ -255,9 +337,10 @@ mnem0nic also reads: it rejects the key, and cannot look up the project until th
 
 Environment variables take precedence: `MNEM0NIC_OBSERVER_CLIENT`, `MNEM0NIC_OBSERVER_MODEL`,
 `MNEM0NIC_OBSERVER_CODEX_MODEL`, `MNEM0NIC_OBSERVER_PARALLEL`, `MNEM0NIC_SEMANTIC_INJECT` and
-`MNEM0NIC_SEMANTIC_INJECT_LIMIT` and `MNEM0NIC_RERANK`. `MNEM0NIC_HOME` moves the memory
-folder. For the installer, `MNEM0NIC_VERSION=0.2.0` pins a version and `MNEM0NIC_INSTALL_DIR` sets
-the folder.
+`MNEM0NIC_SEMANTIC_INJECT_LIMIT` and `MNEM0NIC_RERANK`. `MNEM0NIC_REDACT_GENERIC` and
+`MNEM0NIC_REDACT_LOG_MATCHES` are described under [Redaction](#redaction). `MNEM0NIC_HOME` moves the
+memory folder. For the installer, `MNEM0NIC_VERSION=0.2.0` pins a version and `MNEM0NIC_INSTALL_DIR`
+sets the folder.
 
 ## Commands
 
