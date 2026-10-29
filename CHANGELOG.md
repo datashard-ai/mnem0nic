@@ -4,6 +4,21 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] - 2026-10-29
+
+### Changed
+
+- **The small re-ranker added in 0.3.0 is now off by default.** On real history it added about 40 to
+  70 ms to each question it reordered without a clear gain in the results. Turn it on with
+  `rerank = true` under `[search]` in `config.toml`, or with `MNEM0NIC_RERANK=true`. Only `true`,
+  `on`, `yes` or `1` count as on (in `config.toml`, write `on` and `yes` in quotes: unquoted they are
+  not valid TOML and make the whole file unreadable); anything else leaves it off, and an older
+  `rerank = false` line is still valid. `mnem0nic install` and `mnem0nic embed` download its 18 MB
+  model only when it is on, and a model already downloaded stays. A `config.toml` that cannot be read
+  now leaves it off. A memory server that is already running keeps its setting until its session is
+  restarted; the notes handed over with each prompt follow `config.toml` at once. The keyword-first
+  order of results is unchanged.
+
 ## [0.3.1] - 2026-10-28
 
 ### Fixed
@@ -143,6 +158,7 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
+[0.3.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.2
 [0.3.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.1
 [0.3.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.0
 [0.2.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.2.2

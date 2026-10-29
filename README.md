@@ -54,8 +54,7 @@ Then restart Claude Code or Codex. That's it.
   in `~/.local/bin`.
 - The second sets mnem0nic up for all your projects, in each CLI signed in with its own paid plan,
   after a dated backup of each settings file it changes, and downloads the search model (130 MB, once)
-  for search by meaning and a small re-ranker (18 MB, once) that puts the best results of a question
-  in order.
+  for search by meaning.
 - **Coming from claude-mem?** `mnem0nic install` finds your claude-mem history and offers to import
   it. Press Enter.
 
@@ -233,7 +232,7 @@ parallel = 3                    # note calls at once, from 1 to 8
 [search]
 semantic_inject = true          # past work on every prompt; off by default
 semantic_inject_limit = 5       # how many notes, from 1 to 20
-# rerank = false                # uncomment to stop the re-ranker from ordering the best results (on by default)
+# rerank = true                 # uncomment to let the re-ranker order the best results (off by default)
 ```
 
 With `semantic_inject` on, every prompt of 20 characters or more reaches Claude with the project's
@@ -241,14 +240,18 @@ best-matching notes, as claude-mem's `CLAUDE_MEM_SEMANTIC_INJECT` does, so it se
 it starts. The notes go to Claude Code or Codex with the prompt. It works best with search by
 meaning (`mnem0nic embed`); without it, it hands over the notes that share words with the prompt.
 
-When you ask for five results or more with a question of six words or more that holds nothing that
-looks like code or a path, a small model (TinyBERT, run by the memory daemon) reads the first ten
-results with your question and puts the best match first. A short lookup, a path or an identifier is
-never reordered. `rerank = false` (or `off`, `no`, `0`) turns it off, and `MNEM0NIC_RERANK` does the same
-for one run; Claude Code sessions that are already open keep the setting they started with, and use a
-re-ranker downloaded later only after they restart. Do not put
-that line in a `config.toml` that an older mnem0nic also reads: it rejects the key, and cannot look up the
-project until the line is removed.
+The re-ranker is off by default: on real history it added about 40 to 70 ms to each question it
+reordered and gave no better first place. To turn it on, set `rerank = true` (or `1`, or `"on"` or
+`"yes"` with the quotes) under `[search]`, or `MNEM0NIC_RERANK=true` for one run (the variable also
+takes `on`, `yes` and `1`); any other value leaves it off, and the variable takes precedence over the
+file. Then `mnem0nic install` or `mnem0nic embed` downloads its model (18 MB, once), if you
+run it with the setting in place, e.g. `MNEM0NIC_RERANK=true mnem0nic embed`. With it on, when you ask
+for five results or more with a question of six words or more that holds nothing that looks like code
+or a path, a small model (TinyBERT, run by the memory daemon) reads the first ten results with your
+question and puts the best match first. A short lookup, a path or an identifier is never reordered.
+Claude Code sessions that are already open keep the setting they started with, and use a re-ranker
+downloaded later only after they restart. Do not put that line in a `config.toml` that an older
+mnem0nic also reads: it rejects the key, and cannot look up the project until the line is removed.
 
 Environment variables take precedence: `MNEM0NIC_OBSERVER_CLIENT`, `MNEM0NIC_OBSERVER_MODEL`,
 `MNEM0NIC_OBSERVER_CODEX_MODEL`, `MNEM0NIC_OBSERVER_PARALLEL`, `MNEM0NIC_SEMANTIC_INJECT` and
@@ -260,11 +263,11 @@ the folder.
 
 | Command | What it does |
 |---|---|
-| `mnem0nic install [--no-import] [--no-model]` | Set up the hooks and MCP server, download the search model and the re-ranker (`--no-model` skips both), and offer to import claude-mem's history |
+| `mnem0nic install [--no-import] [--no-model]` | Set up the hooks and MCP server, download the search model (`--no-model` skips it; the re-ranker is fetched too only if it is switched on), and offer to import claude-mem's history |
 | `mnem0nic uninstall [--purge]` | Remove them; `--purge` also deletes your memory |
 | `mnem0nic search "words"` | Search this project's sessions from the terminal |
 | `mnem0nic sessions` | List this project's recent sessions |
-| `mnem0nic embed` | Download the search model and the re-ranker if install didn't, and index what is new |
+| `mnem0nic embed` | Download the search model, and the re-ranker if it is switched on, when install didn't, and index what is new |
 | `mnem0nic import-claude-mem` | Import your claude-mem history |
 | `mnem0nic daemon status` | Show the background process |
 | `mnem0nic pair` | Pair this Mac with another of yours, with a six-digit code |
