@@ -4,6 +4,80 @@ All notable changes to mnem0nic are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+## [0.5.0] - 2026-10-30
+
+### Added
+
+- **Text inside `<private>` tags is never stored.** `<private>…</private>` is removed from your
+  prompts, the agent's replies, and the input and output of tool calls, and from imported claude-mem
+  history, before anything else is done to the text: before it is cut to its stored length, redacted,
+  stored, sent to the notes model or sent to a paired Mac. Five more tags are treated the same way, which
+  with `<private>` makes the six that claude-mem removes: `<claude-mem-context>`, `<system_instruction>`, `<system-instruction>`,
+  `<persisted-output>` and `<system-reminder>`. The rules are claude-mem's: an opening tag may carry
+  attributes, a closing tag ends the earliest opening tag of its name that is still open and everything
+  between goes, nested and overlapping blocks are removed whole, names are case-sensitive, and a tag
+  with no closing tag is left as written, so `explain how <private> works` is kept. A tool call's input
+  is cleaned string by string, so it stays valid JSON. A prompt that is only private text is not stored
+  at all: no message, no prompt record, no note.
+- **Excluded projects.** `excluded_projects = [...]` under `[capture]` in `config.toml`, or
+  `MNEM0NIC_EXCLUDED_PROJECTS` (comma-separated), which replaces the file's list. Patterns are
+  claude-mem's (`*`, `**`, `?`, a leading `~`, the whole path or just the folder's name, `dir/**` also
+  matches `dir`), and the file also takes claude-mem's form, one comma-separated string. A session is
+  tested by the folder it runs in and by its project's root: a pattern that matches the project's root
+  (the root itself, or `parent/**`) excludes every session in that project, and a pattern that matches
+  only a subfolder excludes the sessions started there. In an excluded project every hook returns at once, on Claude
+  Code and on Codex: nothing is stored or noted, and no start-of-session context or past work is
+  handed back; the only thing a hook records is how far each excluded session's transcript was read (a
+  session id and a number, in `excluded-offsets/`), so removing an exclusion never brings back what was
+  typed meanwhile. A note queued before the project was excluded is not written, `mnem0nic
+  import-claude-mem` leaves out the project's history (each row is also tested by the folder its own
+  session or call recorded, a call with none by its session's, then the project), and `work_state_write` answers "Not saved". Searching, reading and
+  `save_memory` still work. Hooks and note jobs read the file every time; the background process reads the
+  environment variable only when it starts, so run `mnem0nic daemon stop` after changing it. An older
+  mnem0nic rejects a `config.toml` that has a `[capture]` section, and cannot look up the project until
+  it is removed.
+- **Three more secrets are redacted:** GitLab access tokens (`glpat-…`, including the longer ones with
+  dot-separated parts), Hugging Face user tokens (`hf_…`) and npm access tokens (`npm_…`).
+
+### Changed
+
+- **Calls to Datashard's tools are no longer stored at all.** Before, the call's input was kept and
+  only its result was replaced by a note. Now there is no message and no tool record for the call, its
+  result goes nowhere, the notes model never sees it, and the claude-mem import skips it. A tool counts
+  when its name contains `datashard`, in any letter case, and a Codex `exec` script that calls one is
+  left out too. Records stored by an earlier version are not rewritten (their results stay replaced),
+  but the notes model no longer reads them.
+- **The notes model gets each tool input and output cut on its own.** Each is cut to at most 16,000
+  characters, keeping the first 60% and the last 30% of the limit, and the tool calls of one turn share
+  about 160,000 characters of tool text (the characters kept: the cut markers and escaping come on
+  top), so a short field leaves what it does not need to the longer ones. The gap is now
+  marked `<elided chars="…" original_size_chars="…" reason="oversize" />`, which names the original
+  size. It was 2,000 characters a field and 40,000 for a turn, which cut a 6,400-character output in a
+  turn of 19 tool calls to about 1,050. Long outputs now reach the notes model in more detail, so a turn
+  with large outputs uses more of your plan's allowance.
+
+### Known limits
+
+- The agent's reply and tool calls in a turn whose prompt was only private text are still stored, as
+  claude-mem does, and may quote what you wrapped. The tool calls are filed with the turn before.
+- `<private>` tags are not removed from a chat you paste without them, from anything already stored,
+  or from text written through `save_memory`, `work_state_write`, a checkpoint or Claude Code's memory
+  notes synced between your Macs.
+- A `<private>` block that opens in one string of a tool call's input and closes in another is not
+  removed, so that the stored input stays valid JSON. A mention of an opening tag earlier in the same
+  text as a real block goes with it, as in claude-mem.
+- A `config.toml` that cannot be read, or whose `[capture]` section is mistaken, excludes nothing.
+- The project root is matched by its real path, so a pattern written through a symlink matches the
+  folder a session was started in but not the root. Imported claude-mem sessions that recorded no
+  folder (most of the old ones) are judged by their project alone.
+- A note queued before a project was excluded learns the session's folder from its tool calls, so a
+  session with no tool call is judged by its project's root alone.
+- An imported claude-mem record's id is made from its text before private blocks come out, and it must
+  not change, so that your Macs hold the record once. A short private value, such as a PIN, could
+  therefore be guessed from the id and the stored record.
+
 ## [0.4.0] - 2026-10-29
 
 ### Added
@@ -226,6 +300,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.5.0
 [0.4.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.4.0
 [0.3.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.2
 [0.3.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.1

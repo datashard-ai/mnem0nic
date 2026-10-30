@@ -30,6 +30,7 @@
   <a href="#syncing-your-macs">Syncing Your Macs</a> •
   <a href="#mcp-tools">MCP Tools</a> •
   <a href="#privacy">Privacy</a> •
+  <a href="#keeping-things-out">Keeping Things Out</a> •
   <a href="#redaction">Redaction</a> •
   <a href="#configuration">Configuration</a> •
   <a href="#troubleshooting">Troubleshooting</a>
@@ -79,6 +80,8 @@ Then restart Claude Code or Codex. That's it.
   between them on your own network.
 - 🔒 **Local.** Everything stays in private folders on your own Macs. No account, no telemetry, no
   server of ours.
+- 🙈 **Keep things out.** Wrap text in `<private>` tags, or exclude a whole project, and it is never
+  stored.
 - 💳 **Your own subscription.** Notes go through the paid plan you already use: your Claude plan for
   Claude Code, your ChatGPT plan for Codex. Never an API key, so never a per-token bill.
 - ⚡ **One native binary.** No Node.js, no Python, nothing left running when you're idle.
@@ -103,7 +106,8 @@ rest).
 
    It reads claude-mem's database without changing it, and brings over your observations, session
    summaries, prompts, tool calls and to-do lists, each in the project it belongs to, redacting the
-   secrets it recognises. About 35,000 observations took under 10 seconds in our tests. To import a
+   secrets it recognises, removing text inside `<private>` tags and leaving out the projects you
+   [excluded](#keeping-things-out). About 35,000 observations took under 10 seconds in our tests. To import a
    copy kept somewhere else: `mnem0nic import-claude-mem --db /path/to/claude-mem.db`.
 
 3. **Turn claude-mem off,** so the two don't both take notes:
@@ -121,7 +125,7 @@ rest).
 
 The import adds only what is new, so you can keep both for a while, import again, then switch. When
 you're happy, delete claude-mem's data with `rm -rf ~/.claude-mem`. Two differences to know: a
-session reads only its own project's memory, and results of Datashard's tools are never stored.
+session reads only its own project's memory, and calls to Datashard's tools are never stored.
 
 ## How It Works
 
@@ -136,9 +140,11 @@ flowchart LR
 
 1. **Capture.** Hooks at session start, after each turn, before compaction and at session end record
    the conversation: your prompts, the agent's replies, and its tool calls with their input and
-   output. Secrets that mnem0nic recognises (API keys, access tokens, private keys, password
-   assignments and more: see [Redaction](#redaction)) are replaced before anything is stored. A
-   prompt that is only a `<task-notification>` block, which a background agent sends back to the agent
+   output, except calls to Datashard's tools, which are not recorded. Text inside `<private>` tags is
+   removed first, and a project you excluded is not recorded at all (see
+   [Keeping Things Out](#keeping-things-out)). Secrets that mnem0nic recognises (API keys, access
+   tokens, private keys, password assignments and more: see [Redaction](#redaction)) are replaced
+   before anything is stored. A prompt that is only a `<task-notification>` block, which a background agent sends back to the agent
    and you never typed, is not stored.
 2. **Notes.** After each turn, a small model writes short notes about it, through the CLI you used and
    its own plan: Claude Haiku through `claude -p` for Claude Code turns, `codex exec` for Codex turns.
@@ -211,15 +217,110 @@ mnem0nic's own tools, over the word-for-word conversations:
 - **What stays on your Macs:** everything mnem0nic records, in `~/.local/share/mnem0nic`, readable
   only by your user account. With paired Macs, the records listed under
   [Syncing Your Macs](#syncing-your-macs) go between them, encrypted, and nowhere else.
-- **What is sent, and where:** after each turn, its request, its tool calls (long input and output
-  trimmed) and the agent's reply go to the provider of the CLI you used: Anthropic for Claude Code,
-  OpenAI for Codex. They go through your own login, to the same provider that already handled the
-  turn.
+- **What is sent, and where:** after each turn, its request, its tool calls and the agent's reply go
+  to the provider of the CLI you used: Anthropic for Claude Code, OpenAI for Codex. They go through
+  your own login, to the same provider that already handled the turn. The input and the output of a
+  tool call are each cut to at most 16,000 characters: a longer one keeps its first 60% and its last
+  30% (9,600 and 4,800 characters at the full limit), with the gap marked
+  `<elided chars="…" original_size_chars="…" reason="oversize" />`. The tool calls of one turn share
+  about 160,000 characters of tool text (the characters kept: the cut markers and escaping come on
+  top), so a short field leaves what it does not need to the longer ones.
 - **What is never sent:** the contents of files the agent only read (their paths are sent), images,
-  the results of memory tools, and secrets that redaction recognises.
+  the results of memory tools, calls to Datashard's tools, text inside `<private>` tags, and secrets
+  that redaction recognises.
 - **Nothing goes to us.** No account, no telemetry, no server of ours.
-- **Datashard:** results of Datashard's tools are never stored. Facts are fetched again when needed,
-  with your current access.
+- **Datashard:** calls to Datashard's tools are not stored at all, neither what was asked nor what
+  came back, and the notes model never sees them. A tool counts when its name contains `datashard`,
+  in any letter case, and a Codex `exec` script that calls one is left out too. Facts are fetched
+  again when needed, with your current access.
+
+## Keeping Things Out
+
+**Text you don't want kept.** Wrap it in `<private>…</private>`. mnem0nic removes it from your
+prompts, the agent's replies, and the input and output of tool calls, and from imported claude-mem
+history, before anything else is done to the text: before it is cut to its stored length, redacted,
+stored, sent to the notes model or sent to a paired Mac. Five more tags are treated the same way, which
+with `<private>` makes the six that claude-mem removes: `<claude-mem-context>`, `<system_instruction>`,
+`<system-instruction>`, `<persisted-output>` and `<system-reminder>`. The rules are claude-mem's:
+
+- A block runs from an opening tag, which may carry attributes (`<private note="x">`), to a closing
+  tag (`</private>`, and a space before the `>` is fine). A closing tag that sits inside the opening
+  tag's attributes does not count.
+- A closing tag ends the earliest opening tag of its name that is still open, and everything between
+  them goes. Blocks that nest or overlap, of one name or of several, are removed whole.
+- A tag with no closing tag stays, and so does a closing tag with no opening one, so a sentence that
+  only talks about a tag is kept as written: `explain how <private> works` is stored as it is. If a
+  real block follows it in the same text, though, that earlier opening tag pairs with the block's
+  closing tag, and everything from the mention to that closing tag goes.
+- Tag names are case-sensitive: `<Private>` does nothing.
+- A tool call's input is cleaned string by string, so what is stored is still valid JSON. A block
+  that opens in one string and closes in another is therefore not removed.
+- A prompt that is only private text is not stored at all: no message, no prompt record, no note.
+
+**A whole project.** To keep a project out of memory, list it in the store's `config.toml`:
+
+```toml
+[capture]
+excluded_projects = ["~/private-work/**", "secret-project", "/work/*/vault"]
+```
+
+or set `MNEM0NIC_EXCLUDED_PROJECTS` to a comma-separated list, which replaces the file's list (an
+empty value counts as not set). The file also takes claude-mem's form, one comma-separated string:
+`excluded_projects = "~/private-work/**,secret-project"`. The patterns are claude-mem's. `*` matches any run of characters
+except `/`, `**` any run at all, a `**/` segment may match no folder, `?` one character other than
+`/`, and a leading `~` is your home folder. Backslashes count as `/`, and case matters. A pattern
+matches the folder's whole path or just its name, so `secret-project` matches any folder of that
+name, and `dir/**` matches `dir` as well as everything under it. A folder reached through a link is
+also matched by its real path.
+
+A session is tested by the folder it runs in (the project folder Claude Code reports, or the folder the
+CLI is running in) and by its project's root, the Git top level. So a pattern that matches the project's
+root (the root itself, or `parent/**`) excludes every session in that project, and a pattern that matches
+only a subfolder excludes the sessions started there. claude-mem tests only the folder a hook ran in, so this
+keeps more out.
+
+In an excluded project, on both Claude Code and Codex:
+
+- Every hook returns at once. Nothing is stored, noted or synced, and nothing is handed back: no
+  start-of-session context and no past work on a prompt. The one thing a hook records is how far each
+  excluded session's transcript was read: a session id and a number, in `excluded-offsets/` in the
+  memory folder. That is why removing an exclusion never brings back what was typed while it was on.
+  The files are tiny, and `mnem0nic uninstall --purge` removes them with the folder.
+- Once any exclusion is set, a hook outside the excluded folders makes one `git` call to find its
+  project's root.
+- A note that was queued before you excluded the project is not written, and no call is made for it.
+  The session's folder is known from its tool calls, so a session with no tool call is judged by its
+  project's root alone.
+- `mnem0nic import-claude-mem` leaves out the project's claude-mem history. claude-mem names a project
+  after a folder, so two folders with the same name are one project there; each imported row is
+  therefore also tested by the folder its own session or call recorded (a call with no folder of its own
+  follows its session's folder first; one with neither follows the project).
+- `work_state_write` answers "Not saved: this project is excluded from mnem0nic" and writes nothing; it
+  is tested against the folder the memory server runs in as well as the project's root.
+  Searching, reading and `save_memory` still work, because you ask for them yourself.
+
+Hooks and note jobs read `config.toml` every time, so a change to the file applies at once. The
+environment variable is read by each hook from the environment of the CLI that runs it, and by the
+background process only when it starts: run `mnem0nic daemon stop` after changing it, and the next
+turn starts a new one. A `config.toml` that cannot be read, or whose `[capture]` section is mistaken,
+excludes nothing, so after a turn in a project you meant to exclude, check with `mnem0nic sessions`
+that no new session appears. Like `[redaction]`, a `[capture]` section is rejected by an older
+mnem0nic, which cannot look up the project until it is removed.
+
+**What this does not cover:**
+
+- A chat you paste without a tag, and anything already stored: nothing stored is rewritten.
+- The project root is matched by its real path, so a pattern written through a symlink matches the
+  folder a session was started in but not the root. Imported claude-mem sessions that recorded no
+  folder (most of the old ones) are judged by their project alone.
+- The agent's reply and tool calls in a turn whose prompt was only private text. They are stored, as
+  claude-mem does, and may quote what you wrapped; the tool calls are filed with the turn before.
+- Text you write into `save_memory`, `work_state_write` or a checkpoint yourself, and Claude Code's
+  memory notes synced between your Macs. Tags are not removed from any of them. (`save_memory` text
+  is redacted; the other three are not.)
+- An imported claude-mem record's id is made from its text before private blocks come out, and it must
+  not change, so that your Macs hold the record once. A short private value, such as a PIN, could
+  therefore be guessed from the id and the stored record.
 
 ## Redaction
 
@@ -237,7 +338,7 @@ it is.
 |---|---|
 | `aws_access_key` | AWS access key ids, permanent (`AKIA…`) and temporary (`ASIA…`) |
 | `aws_secret_key`, `aws_session_token` | The value after `AWS_SECRET_ACCESS_KEY` or `SecretAccessKey`, and after `AWS_SESSION_TOKEN` or `SessionToken` |
-| `github_pat`, `anthropic_key`, `openai_key`, `stripe_key`, `google_api_key`, `slack_token` | Keys and tokens with a known prefix, including Slack `xapp-` and `xoxe-` |
+| `github_pat`, `anthropic_key`, `openai_key`, `stripe_key`, `google_api_key`, `slack_token`, `gitlab_token`, `huggingface_token`, `npm_token` | Keys and tokens with a known prefix, including Slack `xapp-` and `xoxe-` |
 | `jwt`, `claude_mem_key` | JSON web tokens, and claude-mem's own keys |
 | `private_key_pem` | A whole private key block, PGP too |
 | `bearer_token`, `authorization` | A Bearer token, and the credential in any `Authorization` header (Basic, Token and the rest; the scheme word stays) |
@@ -338,7 +439,8 @@ mnem0nic also reads: it rejects the key, and cannot look up the project until th
 Environment variables take precedence: `MNEM0NIC_OBSERVER_CLIENT`, `MNEM0NIC_OBSERVER_MODEL`,
 `MNEM0NIC_OBSERVER_CODEX_MODEL`, `MNEM0NIC_OBSERVER_PARALLEL`, `MNEM0NIC_SEMANTIC_INJECT` and
 `MNEM0NIC_SEMANTIC_INJECT_LIMIT` and `MNEM0NIC_RERANK`. `MNEM0NIC_REDACT_GENERIC` and
-`MNEM0NIC_REDACT_LOG_MATCHES` are described under [Redaction](#redaction). `MNEM0NIC_HOME` moves the
+`MNEM0NIC_REDACT_LOG_MATCHES` are described under [Redaction](#redaction), and
+`MNEM0NIC_EXCLUDED_PROJECTS` under [Keeping Things Out](#keeping-things-out). `MNEM0NIC_HOME` moves the
 memory folder. For the installer, `MNEM0NIC_VERSION=0.2.0` pins a version and `MNEM0NIC_INSTALL_DIR`
 sets the folder.
 
