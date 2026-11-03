@@ -6,6 +6,23 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-03
+
+### Fixed
+
+- **Sync works when mnem0nic was started from somewhere whose PATH lacks `/usr/sbin`.** On a Mac,
+  mnem0nic reads the machine's hardware id with `ioreg`, and it now finds that program by its full path.
+  Before, a process started from such a place could not sync: it failed with `running ioreg: No such
+  file or directory`.
+- **`mnem0nic doctor` warns about a failed background job for 7 days, then counts it as older.** A
+  failed job is never retried or deleted, so one failure used to keep the Background jobs line at a
+  warning for good. Now only a failure from the last 7 days warns; older ones are counted on the same
+  line (`older than 7 days: 3 (newest 8 days ago)`) and the line is `[ok]`, unless a waiting job is stuck.
+- **`mnem0nic doctor` no longer prints an empty Projects section when it couldn't read the store.** The
+  text report leaves the section out; `--json` still has an empty list.
+- **`mnem0nic doctor` refuses a store folder that is a symbolic link,** as the rest of mnem0nic does. It
+  reports a failed Store check instead of reading through the link.
+
 ## [0.6.0] - 2026-11-03
 
 ### Added
@@ -311,7 +328,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.1
 [0.6.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.0
 [0.5.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.5.0
 [0.4.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.4.0

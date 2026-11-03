@@ -482,7 +482,8 @@ mnem0nic doctor
   shown as on or off, but never as a warning.
 - **Notes and background jobs:** how many notes there are and how recent the newest is, and the background
   jobs (notes, embedding, sync): how many are waiting, whether the oldest has waited more than an hour,
-  and whether any has failed.
+  and whether any has failed. A job that failed within the last 7 days is a warning; older failures are
+  counted and shown, but do not warn.
 - **Sync:** for each paired Mac, whether it is in step with this one.
 
 It then lists your 20 most recently active projects with what is stored for each: sessions, messages,
