@@ -6,6 +6,17 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-03
+
+### Added
+
+- **`/mnem0nic` in Claude Code.** Type `/mnem0nic search "redis queue"`, `/mnem0nic sessions` or
+  `/mnem0nic doctor` in a Claude Code session to see the command's output there, as it is. `mnem0nic install`
+  adds the command and `mnem0nic uninstall` removes it. It runs only commands that read memory; anything that
+  changes it, such as `uninstall`, `pair` or `daemon stop`, and `search --all-projects`, `--project` and `--home`, still runs only
+  in a terminal. Only you can run it: Claude can't call it on its own. Quote your words as in a terminal
+  (`/mnem0nic search "what's new"`). Run `mnem0nic install` again to get it.
+
 ## [0.6.1] - 2026-11-03
 
 ### Fixed
@@ -328,7 +339,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.2
 [0.6.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.1
 [0.6.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.0
 [0.5.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.5.0

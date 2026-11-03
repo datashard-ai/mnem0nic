@@ -463,6 +463,12 @@ sets the folder.
 
 `mnem0nic help` lists every command.
 
+In Claude Code, `/mnem0nic` runs the commands that read: `/mnem0nic search "words"`, `/mnem0nic sessions`,
+`/mnem0nic get SESSION`, `/mnem0nic resume`, `/mnem0nic doctor`, `/mnem0nic devices`, `/mnem0nic notes history NAME`,
+and `daemon` or `sync` status. The output is shown as it is. Commands that change anything, and
+`search --all-projects` and a `--project` or `--home` of your own, run only in a terminal. Only you can run `/mnem0nic`; Claude can't call it on its own.
+Quote your words as in a terminal: `/mnem0nic search "what's new"`.
+
 ## Checking That It Works
 
 ```sh
