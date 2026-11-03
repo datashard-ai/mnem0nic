@@ -6,6 +6,17 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-03
+
+### Added
+
+- **`mnem0nic doctor` says whether mnem0nic is working.** It checks the store, the hooks, the background
+  process, the search model, the notes and background jobs, and sync, and names the command that fixes
+  most problems. It only reads: it changes nothing in your memory, starts nothing and prints no
+  conversation or note text. It exits 1 only if the store is missing, can't be read or is newer than the
+  program, or neither Claude Code nor Codex has the hooks. `mnem0nic doctor --json` prints the same
+  checks, and every project, for scripts.
+
 ## [0.5.0] - 2026-10-30
 
 ### Added
@@ -300,7 +311,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.0
 [0.5.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.5.0
 [0.4.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.4.0
 [0.3.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.3.2

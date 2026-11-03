@@ -455,12 +455,53 @@ sets the folder.
 | `mnem0nic embed` | Download the search model, and the re-ranker if it is switched on, when install didn't, and index what is new |
 | `mnem0nic import-claude-mem` | Import your claude-mem history |
 | `mnem0nic daemon status` | Show the background process |
+| `mnem0nic doctor [--json]` | Check that mnem0nic is working: store, hooks, background process, search model, notes, sync. Only reads |
 | `mnem0nic pair` | Pair this Mac with another of yours, with a six-digit code |
 | `mnem0nic devices`, `mnem0nic unpair NAME` | List your paired Macs; stop syncing with one |
 | `mnem0nic sync status`, `mnem0nic sync now` | See how sync is doing; sync at once |
 | `mnem0nic project merge OLD NEW` | Read a project's older memory as part of another |
 
 `mnem0nic help` lists every command.
+
+## Checking That It Works
+
+```sh
+mnem0nic doctor
+```
+
+`doctor` says whether mnem0nic is working, one line per check, each marked `[ok]`, `[warn]`, `[FAIL]` or
+`[info]`. It looks at:
+
+- **The memory store:** that it exists, can be read, and is not from a newer mnem0nic than the one you run.
+- **The hooks:** that Claude Code and Codex each have mnem0nic's hooks, and, where they do, that something
+  was captured lately: capture is judged by the time of the newest captured message, and it is a warning
+  if that is more than 7 days ago.
+- **The background process:** whether it is running, and if so, whether it is the same build as the program.
+  A background process that has left its record behind but does not answer is a warning.
+- **The search model:** that it is downloaded. Without it, search matches words only. The re-ranker is
+  shown as on or off, but never as a warning.
+- **Notes and background jobs:** how many notes there are and how recent the newest is, and the background
+  jobs (notes, embedding, sync): how many are waiting, whether the oldest has waited more than an hour,
+  and whether any has failed.
+- **Sync:** for each paired Mac, whether it is in step with this one.
+
+It then lists your 20 most recently active projects with what is stored for each: sessions, messages,
+notes, prompts and summaries, and when the project was last active. `--json` lists every project.
+
+Most problems come with the command that fixes them, such as `mnem0nic install` or `mnem0nic embed`.
+`doctor` never runs it. It only reads: it doesn't change your memory, start the background process or run any
+other program. For that last reason it doesn't check that the MCP server is registered with Claude Code
+or Codex, and it says so. Its output holds counts, names, versions, folder paths and times, never the
+text of your conversations or notes. It does show project names and folders and the names of your paired
+Macs, so read it before you paste it anywhere.
+
+The exit code is 0 unless something essential is broken: the store is missing, can't be read or is newer
+than the program, or neither Claude Code nor Codex has the hooks. Then it is 1. Every other problem is
+a warning and leaves the code at 0, so a script can rely on it.
+
+```sh
+mnem0nic doctor --json              # the same report as JSON, for scripts
+```
 
 ## Upgrade and Uninstall
 
