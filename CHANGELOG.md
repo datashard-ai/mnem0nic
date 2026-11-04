@@ -6,6 +6,21 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-11-04
+
+### Changed
+
+- **mnem0nic now records a Claude Code session that you sent to another provider.** An example is Claude Code
+  on GLM through Z.ai, with the API key and URL set in the terminal. Claude Code then reports a token login,
+  not a Claude plan, so mnem0nic used to switch itself off for that session: nothing was recorded and no past
+  work was offered. It now records the session and writes its notes through your own plan; the notes never use
+  that key. Two consequences: the session's turns go to Anthropic through your plan, not to the provider the
+  session used, and the session is handed notes from the project's earlier sessions, so those notes can reach
+  that provider. Exclude the project if that must not happen (see Privacy in the README). Sessions on Amazon
+  Bedrock, Google Vertex or Microsoft Foundry are still not recorded, and neither is a Claude Code session whose
+  key and URL are set in Claude Code's `settings.json` instead of the terminal. Codex is unchanged: it was never
+  switched off this way.
+
 ## [0.6.2] - 2026-11-03
 
 ### Added
@@ -339,7 +354,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.3
 [0.6.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.2
 [0.6.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.1
 [0.6.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.0

@@ -148,7 +148,10 @@ flowchart LR
    and you never typed, is not stored.
 2. **Notes.** After each turn, a small model writes short notes about it, through the CLI you used and
    its own plan: Claude Haiku through `claude -p` for Claude Code turns, `codex exec` for Codex turns.
-   Each CLI is checked for its paid plan at install, at every session start and before every note.
+   Each CLI is checked for its paid plan at install, at every session start and before every note. The check
+   ignores any API key or provider URL in the terminal (a session sent to GLM through Z.ai, say): that session is
+   still recorded, and its notes still go through your plan. A Claude Code session on Amazon Bedrock, Google Vertex
+   or Microsoft Foundry is not recorded.
 3. **Recall.** A new session starts with recent context for the project. During it, the MCP tools let
    the agent search past sessions, read notes and timelines, and keep to-do lists.
 
@@ -219,7 +222,12 @@ mnem0nic's own tools, over the word-for-word conversations:
   [Syncing Your Macs](#syncing-your-macs) go between them, encrypted, and nowhere else.
 - **What is sent, and where:** after each turn, its request, its tool calls and the agent's reply go
   to the provider of the CLI you used: Anthropic for Claude Code, OpenAI for Codex. They go through
-  your own login, to the same provider that already handled the turn. The input and the output of a
+  your own login. That is the provider that handled the turn, unless you sent the session elsewhere with an API
+  key or a URL (a session sent to GLM through Z.ai, say): mnem0nic still records it, and its turns go to
+  Anthropic or OpenAI through your plan. Such a session also receives past work from the project's earlier
+  notes, so notes from other sessions reach that provider. To keep a project out of this,
+  [exclude it](#keeping-things-out). A Claude Code session on Amazon Bedrock, Google Vertex or Microsoft Foundry
+  is not recorded at all; Codex has no such rule, so a Codex session sent to another provider is recorded. The input and the output of a
   tool call are each cut to at most 16,000 characters: a longer one keeps its first 60% and its last
   30% (9,600 and 4,800 characters at the full limit), with the gap marked
   `<elided chars="…" original_size_chars="…" reason="oversize" />`. The tool calls of one turn share
@@ -525,7 +533,10 @@ rm ~/.local/bin/mnem0nic
 ## Troubleshooting
 
 - **"mnem0nic is off in this session"** at the start of a session: that CLI isn't signed in with a paid
-  plan of its own. The message says what to do; then start a new session.
+  plan of its own on this machine (an API key or provider URL in the session does not matter), or the session is on
+  Amazon Bedrock, Google Vertex or Microsoft Foundry. The message says what to do; then start a new session. If you
+  send Claude Code to another provider with a key and URL in Claude Code's `settings.json`, mnem0nic stays off for
+  those sessions: set them in the terminal instead, for example in a shell function that sets them for one launch.
 - **`command not found: mnem0nic`:** `~/.local/bin` isn't on your `PATH`. Add it with
   `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc`, then open a new terminal.
 - **macOS blocks the program** after a download from the releases page in a browser: use the install
