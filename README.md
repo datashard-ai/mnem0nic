@@ -232,7 +232,10 @@ mnem0nic's own tools, over the word-for-word conversations:
   30% (9,600 and 4,800 characters at the full limit), with the gap marked
   `<elided chars="…" original_size_chars="…" reason="oversize" />`. The tool calls of one turn share
   about 160,000 characters of tool text (the characters kept: the cut markers and escaping come on
-  top), so a short field leaves what it does not need to the longer ones.
+  top), so a short field leaves what it does not need to the longer ones. Separately,
+  `mnem0nic eval --paraphrases N` sends the text of up to N notes (the first 1,500 characters of each) to
+  Claude through your own login, but only after you answer yes to its printed plan; see
+  [Measuring Search](#measuring-search).
 - **What is never sent:** the contents of files the agent only read (their paths are sent), images,
   the results of memory tools, calls to Datashard's tools, text inside `<private>` tags, and secrets
   that redaction recognises.
@@ -464,6 +467,7 @@ sets the folder.
 | `mnem0nic import-claude-mem` | Import your claude-mem history |
 | `mnem0nic daemon status` | Show the background process |
 | `mnem0nic doctor [--json]` | Check that mnem0nic is working: store, hooks, background process, search model, notes, sync. Only reads |
+| `mnem0nic eval [--paraphrases N] [--limit N] [--questions N] [--save-baseline FILE] [--against FILE --fall N]` | Measure whether search finds the right past note, with questions made from your own notes, on a temporary copy of your store. Prints counts only. Needs Claude Code on a paid Claude plan; see [Measuring Search](#measuring-search) |
 | `mnem0nic pair` | Pair this Mac with another of yours, with a six-digit code |
 | `mnem0nic devices`, `mnem0nic unpair NAME` | List your paired Macs; stop syncing with one |
 | `mnem0nic sync status`, `mnem0nic sync now` | See how sync is doing; sync at once |
@@ -517,6 +521,95 @@ a warning and leaves the code at 0, so a script can rely on it.
 ```sh
 mnem0nic doctor --json              # the same report as JSON, for scripts
 ```
+
+## Measuring Search
+
+```sh
+mnem0nic eval
+```
+
+`eval` measures whether search finds the right past note, using questions made from your own notes. It
+makes them when you run it; nothing ships with mnem0nic. The **meaning questions** are free: a note's own
+title is the question, and that note is the right answer. A note is asked about only if its title is longer
+than 25 characters, its text is longer than 100, its project folder is still on this Mac and its project is
+not [excluded](#keeping-things-out).
+
+For each question, `eval` runs the prompt hook that Claude Code runs on every prompt, in the question's
+project folder, and looks at where the right note came among the notes the hook handed over. It runs the
+hook once per question, one after another, on a temporary copy of your store:
+
+- **The copy** is made in your temporary folder and holds your index, your `models` folder, your `projects`
+  folder (the stored records) and `config.toml`, so it takes about as much disk space as those do together:
+  have that much free. It is removed when the run ends; if it can't be removed, `eval` says where it was
+  left. The hook runs on it with past work switched on, whatever your `config.toml` says.
+- **Your own store is only read.** The one thing `eval` writes there is the `eval` folder, readable only by
+  your user account, which keeps the questions so that the next run asks the same ones. A background
+  process of its own may start on the copy, and `eval` stops it at the end. The one your sessions use is
+  neither started nor stopped.
+- **Questions left out:** those of notes in excluded projects, and a saved question whose note no longer
+  exists. If a saved question names a project folder that is gone, `eval` stops and says how to make the
+  questions again.
+
+The report is counts only, never a title, a question or a note's text. For each set of questions, and for all
+of them together, it gives how many questions ran, how often the right note came first, how often it came
+among the notes handed over, and the hook's median (p50) and 90th-percentile (p90) time in milliseconds. A
+time is a whole hook run, and the first one may include starting the copy's background process.
+
+- `--limit N` is how many notes the hook hands over, from 1 to 20 (default 5). "Among the N handed over" is
+  judged on it.
+- `--questions N` is how many questions of each set a run uses: the first N in a fixed order, so the same
+  ones every run. The default is 200, and 0 uses all of them. The hook runs once per question, so a large
+  set takes a while.
+- `--paraphrases N` also asks Claude for paraphrase questions, as below.
+- `--save-baseline FILE` and `--against FILE --fall N` compare runs, as below.
+
+**Paraphrase questions** are optional, because they use Claude. Ask for them with the number of notes:
+
+```sh
+mnem0nic eval --paraphrases 50
+```
+
+`--paraphrases 50` asks Claude (`claude -p`, through your own Claude login, on your plan and never an API key)
+to write, for 50 of your notes, the question you might type weeks later in your own words. A question that
+shares a rare word with its note is dropped, since it would test the words, not the meaning. Before any
+call, `eval` prints how many notes, how many calls (25 notes to a call) and which model, and asks yes or no
+on standard input. Only `y` or `yes` makes the calls; anything else makes none, and the run goes on with the
+meaning questions alone. The number of calls it printed is the most that will be made, and a call that fails
+is not repeated.
+**Each call sends the text of its notes to Claude,** the first 1,500 characters of each; notes in an
+excluded project are never sent. The questions kept are saved in the `eval` folder and reused as they are: on
+later runs, give `--paraphrases` again to include them, and no call is made. Delete `paraphrase.json` to
+make new ones.
+
+**Comparing runs.** The first run on a store is a baseline, not a pass or a fail. Save it, and compare later
+runs with it:
+
+```sh
+mnem0nic eval --save-baseline ~/search-baseline.json
+mnem0nic eval --against ~/search-baseline.json --fall 2
+```
+
+`--save-baseline` writes this run's numbers to a file only you can read, replacing it if it exists: the
+counts and hook times, where each question's note came (keyed by the note's number in the store), the
+mnem0nic version, the date, the number of notes handed over, the cap on questions, a fingerprint of the
+questions and the search settings the run used. It holds no title, question or note text. `--against`
+compares a later run with a saved baseline. It needs `--fall`, and `--fall` needs `--against`: give both or
+neither, as `--fall` has no default. The comparison says how many questions' notes came higher and lower
+than in the baseline, and `eval` exits 1 if any reported percentage, first or among the N handed over, in a
+set or overall, fell by more than `--fall` points; a fall of exactly that is within the line, and a rise
+never counts. A baseline made with other questions (give `--paraphrases` the same way both times), another
+`--questions` or another `--limit` is refused before the store is copied. With `--save-baseline` too, the
+comparison is made first, with the old baseline, and the two files must differ.
+
+**What it needs.** Claude Code signed in with a paid Claude plan (Pro, Max, Team or Enterprise), because the
+hook it runs hands over nothing without one; without it, `eval` stops and says so rather than report 0%. Codex
+alone is not enough. It also needs a store with notes in it, and, for paraphrases, `claude` on your `PATH`.
+
+**What it costs.** Time, disk space for the copy (the index, `models` and `projects` folders together, as
+above) and, with paraphrases, your Claude plan's usage: one call for every 25 notes. The meaning questions
+use none. `eval` runs only in a terminal, not through `/mnem0nic`. Its exit code is 1 when a comparison
+breaches the line, and also when the run can't go ahead: no store, no paid plan, a baseline that doesn't
+match.
 
 ## Upgrade and Uninstall
 

@@ -6,6 +6,25 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-05
+
+### Added
+
+- **`mnem0nic eval` measures whether search finds the right past note.** It makes its questions when you run
+  it, from your own notes: a note's title is the question and that note is the right answer, which costs
+  nothing. It copies your index, search models, stored records and settings file to a temporary folder (keep
+  about as much free disk space as those take together), asks each question through the prompt hook Claude
+  Code runs, and removes the copy. Your notes are only read, and the questions are kept in a private `eval`
+  folder in your store; the background process your sessions use is neither started nor stopped. It prints
+  counts only: how often the right note came first, how often it was among the notes handed over (`--limit`,
+  1 to 20, default 5), and the hook's median and 90th-percentile time. A run uses the first 200 questions of
+  each set; `--questions N` changes that. `--paraphrases N` also asks Claude to reword a question for N notes:
+  it prints how many `claude -p` calls that takes and asks yes or no, makes no more than it said, and sends
+  those notes' text to Claude through your own Claude login, on your plan and never an API key. `eval` needs
+  Claude Code signed in with a paid Claude plan. The first run on a store is a baseline, not a pass or a fail:
+  `mnem0nic eval --save-baseline base.json` keeps the numbers, and `mnem0nic eval --against base.json --fall 2`
+  exits 1 if a reported percentage fell by more than 2 points.
+
 ## [0.6.3] - 2026-11-04
 
 ### Changed
@@ -354,7 +373,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.6.3...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.7.0
 [0.6.3]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.3
 [0.6.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.2
 [0.6.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.1
