@@ -28,10 +28,10 @@ reply: `ping`, `save`, `search`, `work_state_write`, `work_state_read`,
 and comes back as a dict — every transport or auth failure raises
 `Mnem0nicError`: `.status` is the HTTP status of a refusal, and `None` when
 no usable reply came (connection refused or timed out, reply not JSON). A
-503 means the door is busy (it serves 32 connections at once) and is answered
+503 with the body `{"error": "busy"}` means the door is busy (it serves 32 connections at once) and is answered
 before any route runs, so the client repeats it up to 3 times (after 0.2, 0.5
 and 1 s; `backoff=` changes the waits) before raising `Mnem0nicError` with
-`.status == 503`; no other failure is retried, because a repeated
+`.status == 503` and `.busy` true; no other failure is retried, a 503 from a proxy in front of the door included, because a repeated
 `save(..., mode="extract")` would queue a second paid note job. The client
 sends the token only to the URL you give it: no proxy from the
 environment, no redirects followed. That shape is exactly what an agent or a

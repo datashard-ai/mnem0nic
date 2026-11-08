@@ -247,7 +247,7 @@ downloads the search model, as on a Mac.
 `"queued"`, or no note at all, with the record saved either way: `"unavailable"` when no provider URL or key
 is set. A save whose `content` or `title` is over the redaction limit (1,048,576 UTF-16 units, about a million
 characters) is refused with a `400` and nothing is stored: split it. The door serves 32 connections at once.
-A `503` means the door is busy; it is answered before anything runs, so repeating it is always safe. Do not
+A `503` with the body `{"error": "busy"}` means the door is busy; it is answered before anything runs, so repeating it is always safe. Do not
 repeat other failed calls blindly: a repeated `extract` save queues a second paid note.
 
 Any HTTP client can call it:
@@ -279,6 +279,21 @@ print(door.search("curlew flock")["text"])
 
 It repeats a `503` up to three times, raises `Mnem0nicError` for any other failure, and sends the token only
 to the address you give it: no proxy from the environment, and no redirects.
+
+**The JavaScript client** is the same thing for Node 18+, Bun, Deno and Cloudflare Workers:
+[`clients/typescript/mnem0nic.mjs`](clients/typescript/mnem0nic.mjs), one file with no dependencies, and
+[`mnem0nic.d.mts`](clients/typescript/mnem0nic.d.mts) for TypeScript. Copy both into your project.
+
+```js
+import { Mnem0nic } from "./mnem0nic.mjs";
+
+const door = new Mnem0nic("http://127.0.0.1:8787", process.env.MNEM0NIC_HTTP_TOKEN);
+await door.save("a curlew flock turned north at dawn", { title: "Curlew turn" });
+console.log((await door.search("curlew flock")).text);
+```
+
+It behaves like the Python client: a `503` is repeated up to three times, any other failure throws
+`Mnem0nicError`, and a redirect is never followed.
 
 ## MCP Tools
 

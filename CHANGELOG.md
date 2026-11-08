@@ -6,6 +6,17 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-11-08
+
+### Added
+
+- **A JavaScript client for the memory service's door**, in `clients/typescript/`: one file, `mnem0nic.mjs`, on
+  the standard `fetch` (Node 18+, Bun, Deno, Cloudflare Workers) with no dependencies, the types in
+  `mnem0nic.d.mts`, and a README. It matches the Python client: a `503` is repeated up to three times, any other
+  failure throws `Mnem0nicError`, and the token goes only to the address you give it, with no redirect followed.
+
+The program is unchanged apart from its version.
+
 ## [0.8.1] - 2026-11-08
 
 ### Added
@@ -412,7 +423,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.2
 [0.8.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.1
 [0.8.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.0
 [0.7.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.7.0

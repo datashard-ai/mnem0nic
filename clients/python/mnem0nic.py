@@ -3,8 +3,8 @@
 Zero dependencies — Python 3 stdlib only. Every method sends one POST with the
 bearer token and returns the parsed JSON reply; every transport or auth failure
 raises `Mnem0nicError`. A tool-level error is data: it arrives as a 200 with
-`"isError": true` and is returned as a dict, not raised. The one failure repeated for you is a
-503: the door is busy, answers it before any route runs, so repeating the call is always safe.
+`"isError": true` and is returned as a dict, not raised. The one failure repeated for you is the
+door's own 503, {"error": "busy"}: it is answered before any route runs, so repeating the call is always safe.
 
 © 2026 Xibit Digital. All rights reserved. Use is subject to the LICENSE.md of the mnem0nic repository
 (https://github.com/datashard-ai/mnem0nic).
@@ -22,9 +22,11 @@ class Mnem0nicError(Exception):
     is its HTTP status code), or no answer at all (`status` is None) — refused,
     reset or timed-out connection, or a reply that is not JSON."""
 
-    def __init__(self, message, status=None):
+    def __init__(self, message, status=None, busy=False):
         super().__init__(message)
         self.status = status
+        # True only for the door's own 503, {"error": "busy"}: the one failure that is safe to repeat.
+        self.busy = busy
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -46,14 +48,14 @@ class Mnem0nic:
         self.backoff = backoff
 
     def _post(self, path, body):
-        # A 503 is the door at its connection cap, answered before any route runs: nothing happened,
-        # so it is repeated, a bounded number of times. Nothing else is: a save repeated after a
-        # timeout or a 500 may have landed, and a repeated extract save queues a second paid note job.
+        # The door's own 503 is at its connection cap, answered before any route runs: nothing happened,
+        # so it is repeated, a bounded number of times. Nothing else is, a 503 from a proxy included: that
+        # may have landed, and a repeated extract save queues a second paid note job.
         for wait in self.backoff:
             try:
                 return self._post_once(path, body)
             except Mnem0nicError as err:
-                if err.status != 503:
+                if not err.busy:
                     raise
             time.sleep(wait)
         return self._post_once(path, body)
@@ -76,7 +78,13 @@ class Mnem0nic:
                 text = err.read().decode("utf-8", "replace")[:500]
             except (OSError, http.client.HTTPException):
                 text = ""
-            raise Mnem0nicError(f"{err.code} {text}".strip(), err.code) from err
+            busy = False
+            if err.code == 503:
+                try:
+                    busy = json.loads(text).get("error") == "busy"
+                except (ValueError, AttributeError):
+                    busy = False
+            raise Mnem0nicError(f"{err.code} {text}".strip(), err.code, busy) from err
         except (
             urllib.error.URLError,  # refused, unreachable, reset while connecting
             OSError,  # TimeoutError, ConnectionError, RemoteDisconnected while reading
