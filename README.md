@@ -14,7 +14,7 @@
 <p align="center">
   <a href="https://github.com/datashard-ai/mnem0nic/releases/latest"><img src="https://img.shields.io/github/v/release/datashard-ai/mnem0nic?label=release&color=ea0026" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/macOS-Apple%20silicon-111111?logo=apple" alt="macOS on Apple silicon">
-  <img src="https://img.shields.io/badge/Linux%20aarch64-memory%20service-111111?logo=linux&logoColor=white" alt="Linux on aarch64, for the memory service">
+  <img src="https://img.shields.io/badge/Linux%20aarch64%20and%20x86__64-memory%20service-111111?logo=linux&logoColor=white" alt="Linux on aarch64 and x86_64, for the memory service">
   <img src="https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Codex-555555" alt="Works with Claude Code and Codex">
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/licence-proprietary-lightgrey" alt="Proprietary licence"></a>
 </p>
@@ -71,16 +71,17 @@ Running mnem0nic as a [memory service](#running-as-a-memory-service) on a server
 own model provider and an API key instead.
 
 **Platforms:** mnem0nic is built and used daily on Macs with Apple silicon. The same program also runs on Linux
-on aarch64 (`install.sh` picks the right file). We ran its test suite on Linux aarch64 (release 0.8.2): all but two
-tests passed, and the two are tests of the macOS launch agent that memory sync uses. So on Linux:
+on aarch64 and on x86_64, Intel or AMD (`install.sh` picks the right file). We ran its test suite on Linux
+aarch64 (release 0.8.2): all but two tests passed, and the two are tests of the macOS launch agent that memory
+sync uses. So on Linux:
 
-- the memory service is supported;
-- the personal tool (hooks for Claude Code and Codex, notes through your plan, search) is expected to work but has
-  not yet been used day to day on Linux;
+- the memory service is supported, on aarch64 and on x86_64;
+- the personal tool (hooks for Claude Code and Codex, notes through your plan, search) is expected to work on
+  aarch64 but has not yet been used day to day on Linux, and is not supported on x86_64;
 - syncing memory between machines (`mnem0nic pair`) is for Macs only: it relies on a macOS launch agent to listen
   while idle, and Linux has no equivalent yet.
 
-Intel Macs, Windows and x86 Linux are not supported.
+Intel Macs and Windows are not supported. Linux on x86_64 is supported for the memory service only: `install.sh` refuses a per-user install there.
 
 ## Key Features
 
@@ -220,10 +221,11 @@ Linux machine: the same daemon and store, with an HTTP door for saving and searc
 through your own model provider. It is opt-in and off by default. Your Macs' install is not affected: they
 keep the subscription login, and nothing below applies to them.
 
-> **Install.** On the Linux machine (aarch64), as root:
+> **Install.** On the Linux machine (aarch64 or x86_64), as root:
 > `curl -fsSL https://raw.githubusercontent.com/datashard-ai/mnem0nic/main/install.sh | sudo sh -s -- --system`.
 > It installs the binary in `/usr/local/bin`, creates a `mnem0nic` user and a systemd service that is enabled
-> but not started, and prints the steps to configure it. The Linux file is published from release 0.8.1.
+> but not started, and prints the steps to configure it. The aarch64 file is published from release 0.8.1, the
+> x86_64 file from release 0.9.0.
 
 - **The door.** One small JSON API, `POST` only, with a bearer token: `/ping`, `/save`, `/search`,
   `/timeline`, `/work-state/write` and `/work-state/read`, with the meaning of the MCP tools of the same

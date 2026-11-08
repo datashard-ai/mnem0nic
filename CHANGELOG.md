@@ -6,6 +6,18 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-08
+
+### Added
+
+- **A Linux x86_64 release file.** `mnem0nic-x86_64-unknown-linux-gnu.tar.gz` and its checksum are now
+  published, built in CI like the aarch64 file and scanned for leaked paths before it is published. `install.sh`
+  picks it on Linux on x86_64 (Intel or AMD), and `install.sh --system` installs the memory service on either
+  aarch64 or x86_64. This is for the memory service only: the personal tool is still for Macs with Apple
+  silicon, and is not supported on x86_64.
+
+The program is unchanged apart from its version.
+
 ## [0.8.2] - 2026-11-08
 
 ### Added
@@ -423,7 +435,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.8.2...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.9.0
 [0.8.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.2
 [0.8.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.1
 [0.8.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.0

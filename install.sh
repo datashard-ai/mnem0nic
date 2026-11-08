@@ -3,7 +3,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/datashard-ai/mnem0nic/main/install.sh | sh
 # MNEM0NIC_VERSION pins a version (for example 0.1.1).
 # MNEM0NIC_INSTALL_DIR sets the folder (default: ~/.local/bin).
-# --system (Linux aarch64 only, as root) installs the systemd service instead:
+# --system (Linux on aarch64 or x86_64, as root) installs the systemd service instead:
 #   curl -fsSL https://raw.githubusercontent.com/datashard-ai/mnem0nic/main/install.sh | sudo sh -s -- --system
 set -eu
 
@@ -36,12 +36,17 @@ case "$os/$arch" in
     fi
     ;;
   Linux/aarch64) target="aarch64-unknown-linux-gnu" ;;
-  Linux/*) fail "Linux on $arch is not supported yet. mnem0nic on Linux needs aarch64." ;;
-  *) fail "$os on $arch is not supported yet. mnem0nic runs on Macs with Apple silicon, or Linux on aarch64." ;;
+  Linux/x86_64) target="x86_64-unknown-linux-gnu" ;;
+  Linux/*) fail "Linux on $arch is not supported yet. mnem0nic on Linux needs aarch64 or x86_64." ;;
+  *) fail "$os on $arch is not supported yet. mnem0nic runs on Macs with Apple silicon, or on Linux on aarch64 or x86_64." ;;
 esac
 
+if [ "$target" = "x86_64-unknown-linux-gnu" ] && [ "$system" != 1 ]; then
+  fail "on Linux x86_64 only the memory service is supported: install it with --system (curl -fsSL <url> | sudo sh -s -- --system). The personal tool needs a Mac with Apple silicon."
+fi
+
 if [ "$system" = 1 ]; then
-  [ "$os" = Linux ] || fail "--system needs Linux on aarch64; on a Mac install per user."
+  [ "$os" = Linux ] || fail "--system needs Linux on aarch64 or x86_64; on a Mac install per user."
   [ "$(id -u)" = 0 ] || fail "--system must run as root: curl -fsSL <url> | sudo sh -s -- --system"
   DIR="/usr/local/bin"
 fi
