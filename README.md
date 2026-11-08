@@ -310,6 +310,101 @@ console.log((await door.search("curlew flock")).text);
 It behaves like the Python client: a `503` is repeated up to three times, any other failure throws
 `Mnem0nicError`, and a redirect is never followed.
 
+### Running in a container
+
+The same service runs in a container, with Docker Compose or Podman, on any Linux machine or VM (arm64 or
+amd64): no systemd and no root install. The [`docker/`](docker) folder holds a `Dockerfile`, a `compose.yaml`,
+an example `config.toml` and an example environment file, `env.example`. The image is built on your machine
+from the published Linux release file for its processor, and the build fails unless the file matches the
+SHA-256 pinned in `compose.yaml`.
+
+1. **Pick the release.** `compose.yaml` pins `VERSION` and the SHA-256 of the two Linux files
+   (`SHA256_ARM64`, `SHA256_AMD64`), changed together. Use them as they are, or take another release,
+   0.9.0 or later, and copy both checksums from its `.sha256` files.
+2. **Make a folder** for the deployment and copy `Dockerfile`, `compose.yaml`, `config.toml` and
+   `env.example` into it. The steps below run there.
+3. **Create the store's volume**, once: `docker volume create mnem0nic-data`.
+4. **Fill the environment file:** `cp env.example .env && chmod 600 .env`, then set `MNEM0NIC_HTTP_TOKEN`
+   (hex, such as `openssl rand -hex 32`: Compose expands `$` in values) and, for notes,
+   `MNEM0NIC_OBSERVER_API_KEY` and `MNEM0NIC_OBSERVER_API_BASE_URL`. Keep `.env` out of version control.
+5. **Edit `config.toml`:** `project`, and the `[observer]` model. Leave `listen` as it is.
+6. **Build and start:** `docker compose build`, then `docker compose up -d`.
+7. **Download the search model** into the volume: `docker compose run --rm mnem0nic embed`. It can run
+   before the first start or while the service is up, and the service picks the model up with no restart.
+   Until then search matches words only.
+8. **Try it** from the same machine:
+
+```sh
+TOKEN=$(grep '^MNEM0NIC_HTTP_TOKEN=' .env | cut -d= -f2)
+
+curl -s -X POST http://127.0.0.1:8787/save \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"content": "a curlew flock turned north at dawn", "title": "Curlew turn"}'
+
+curl -s -X POST http://127.0.0.1:8787/search \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"query": "curlew flock"}'
+```
+
+Other services in the same Compose project reach the door at `http://mnem0nic:8787`. The service logs to
+standard error (`docker compose logs mnem0nic`, capped at three files of 10 MB); the image has no health
+check, so test the door with `/ping`.
+
+**Commands beside the service** go through `docker compose exec mnem0nic mnem0nic …`, for example `doctor`
+and `daemon status`. In the container `search` needs `--all-projects` (the image has no git), and searches
+conversations and checkpoints; the records you save are searched through the door. Use `exec`, not
+`run`, for anything that calls the daemon: a second container cannot reach the daemon, removes its
+`daemon.json` as stale and tries to start a daemon of its own, which exits. `docker compose restart
+mnem0nic` puts that right. `embed` is the one command for `run`, as it never calls the daemon.
+
+**Upgrade:** change `VERSION` and both checksums in `compose.yaml`, then `docker compose build` and
+`docker compose up -d`. The store and `config.toml` stay. A store written by a newer mnem0nic is refused by
+an older one, as on a Mac. **Stop:** `docker compose stop`, and `docker compose start` to run it again;
+`docker compose down` removes the container and keeps the store.
+
+**Read these before you rely on it:**
+
+- **The door listens on all of the container's interfaces** (`0.0.0.0:8787` in `config.toml`), because the
+  container's own loopback cannot be reached from outside it. The `127.0.0.1:8787:8787` publish in
+  `compose.yaml` is what keeps it off the network: change it only for a private network. The container's
+  address on the host's bridge network can still be reached from the host, and the door speaks plain HTTP,
+  so the token stays its lock.
+- **The store is the volume.** It is declared external, so `docker compose down -v` cannot remove it, but
+  `docker volume prune --all` (Docker 23 and later) and `podman volume prune` remove an unused named volume,
+  this one included. Renaming it in `compose.yaml` leaves the store behind. Keep it on the host's local
+  disk, never NFS or EFS: SQLite's write-ahead log does not work over a network file system. A bind mount
+  instead needs a folder owned by uid 10001, the user the image runs as.
+- **One daemon per store.** Never point two service containers, or two projects, at one volume: the second
+  exits at once and is restarted in a loop. Two stores on one host need two volumes, two `container_name`s
+  and two host ports. `up --scale` is refused for the same reason.
+- **The provider must be `https`.** The key is sent only to `https` (or the loopback), so a provider proxy
+  reached as plain `http://` on the Compose network is refused. A proxy that inspects TLS does not work
+  either: the program trusts only its own bundled root certificates, which also stops the model download.
+- **The environment file is not secret from the host.** Anyone who can run `docker inspect` there can read
+  the token and the key.
+- **No sync.** The container's store is never paired; do not run `pair` or `sync` in it.
+- **A missing door setting is silent.** If `config.toml` is unreadable or has no `[http] listen`, the door is
+  simply off and the daemon exits after 15 minutes idle, so the container restarts every 15 minutes and serves
+  nothing. If `/ping` fails, check `docker compose logs mnem0nic` and that `config.toml` sets `[http] listen`.
+- **Some commands expect a Mac's setup.** In the container `doctor` reports that no client has hooks and exits
+  1, and `search` without `--all-projects` fails because the image has no `git`. Use the door's `/search`, or
+  `search --all-projects`, to look for records.
+- **After a reboot,** Docker starts the service again with the host. Podman does so only with
+  `podman-restart.service` enabled (`sudo systemctl enable podman-restart.service`; rootless:
+  `systemctl --user enable podman-restart.service` and `loginctl enable-linger $USER`).
+- **Without Compose,** or with Podman: `podman compose` runs the same `compose.yaml` through whichever
+  Compose provider is installed. Plain `podman run` (or `docker run`) works too, but needs `--init`: the
+  daemon handles no signals, and without an init `stop` waits out its timeout and then kills it.
+
+  ```sh
+  podman build -t mnem0nic .
+  podman run -d --name mnem0nic --init --restart always --env-file .env \
+    -p 127.0.0.1:8787:8787 --read-only --tmpfs /tmp --cap-drop ALL \
+    --security-opt no-new-privileges \
+    -v mnem0nic-data:/var/lib/mnem0nic \
+    -v "$PWD/config.toml:/var/lib/mnem0nic/config.toml:ro,z" mnem0nic
+  ```
+
 ## MCP Tools
 
 claude-mem's tools, with the same names and parameters:

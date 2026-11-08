@@ -1,0 +1,62 @@
+# mnem0nic memory service. One daemon per store: never point two containers at one volume.
+#
+# Before the first start:
+#   docker volume create mnem0nic-data
+#   cp env.example .env      then fill in .env
+#   edit config.toml         ("project")
+# Then: docker compose build && docker compose up -d
+
+services:
+  mnem0nic:
+    build:
+      context: .
+      # The release to install and the SHA-256 of its two Linux files. Change all three together
+      # on an upgrade; the checksums are in each release's .sha256 files.
+      args:
+        VERSION: "0.9.0"
+        SHA256_ARM64: "a74478d3d678b445777586014cd6529b27f0ff21dd54df5de9f1f3c5c8e02ac5"
+        SHA256_AMD64: "098fd9634264a4bbf8ac51399ca53de75e007ef56bb64a8c57379f379cb50da9"
+    # A fixed name stops "up --scale" from starting a second daemon. A second store on this host
+    # needs its own name and host port.
+    container_name: mnem0nic
+    # The daemon handles no signals, and a PID 1 ignores SIGTERM: without an init, "stop" waits
+    # out its timeout and then kills it.
+    init: true
+    # Always: the daemon exits 0 after a worker error, and that must restart it too.
+    restart: always
+    # Token and provider key. The file must exist; keep it out of version control.
+    env_file: .env
+    ports:
+      # The door listens on all of the container's interfaces. This publish, on the host's
+      # loopback only, is what keeps it off the network: do not widen it past a private network.
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - type: volume
+        source: mnem0nic-data
+        target: /var/lib/mnem0nic
+      - type: bind
+        source: ./config.toml
+        target: /var/lib/mnem0nic/config.toml
+        read_only: true
+        bind:
+          selinux: z
+    # Read-only root; only the volume and /tmp are writable.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  # Created once by hand (docker volume create mnem0nic-data), so "docker compose down -v"
+  # cannot remove the store. The volume is on the host's local disk, never NFS or EFS.
+  mnem0nic-data:
+    external: true
+    name: mnem0nic-data

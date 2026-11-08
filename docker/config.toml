@@ -1,0 +1,16 @@
+# mnem0nic memory service: example config.toml for the container.
+# Keep your own copy next to compose.yaml, and edit "project". It holds no secrets: the door's
+# token and the provider's key and URL come from the environment file (.env).
+
+[http]
+# 0.0.0.0 is for the container only: the container's own loopback cannot be reached from outside it.
+# compose.yaml publishes the port on the host's 127.0.0.1 only. Leave this line in: without it
+# the door is off.
+listen = "0.0.0.0:8787"
+# The project this memory belongs to. Edit it.
+project = "pipeline"
+
+[observer]
+# The model that writes notes for saves with "mode": "extract", at the provider named by
+# MNEM0NIC_OBSERVER_API_BASE_URL in .env. Edit it, or remove this table to store text as it is.
+model = "your-model-name"
