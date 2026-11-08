@@ -9,9 +9,9 @@ ARG BASE=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c
 # Stage 1: download and verify. curl and the CA certificates stay in this stage.
 FROM ${BASE} AS fetch
 ARG TARGETARCH
-ARG VERSION=0.9.0
-ARG SHA256_ARM64=a74478d3d678b445777586014cd6529b27f0ff21dd54df5de9f1f3c5c8e02ac5
-ARG SHA256_AMD64=098fd9634264a4bbf8ac51399ca53de75e007ef56bb64a8c57379f379cb50da9
+ARG VERSION=0.9.1
+ARG SHA256_ARM64=b0c281b0cc00ab008b995c468f8662cbaae50a44480637b6ad856d98f55cdbb0
+ARG SHA256_AMD64=47ba396c8b53dfd2fe0cfdaea69df0d1384cf548cfb9fd05c24b077c6591a5e4
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
@@ -60,7 +60,8 @@ COPY --from=fetch /out/LICENSE.md /out/THIRD-PARTY-NOTICES.md /usr/share/doc/mne
 # The store is the volume on /var/lib/mnem0nic. MNEM0NIC_HOME makes every command in the container
 # use it; without it a command would start a second, empty store under $HOME.
 ENV MNEM0NIC_HOME=/var/lib/mnem0nic \
-    HOME=/var/lib/mnem0nic
+    HOME=/var/lib/mnem0nic \
+    MNEM0NIC_DOOR_REQUIRED=1
 WORKDIR /var/lib/mnem0nic
 USER 10001:10001
 ENTRYPOINT ["mnem0nic"]

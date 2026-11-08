@@ -13,9 +13,9 @@ services:
       # The release to install and the SHA-256 of its two Linux files. Change all three together
       # on an upgrade; the checksums are in each release's .sha256 files.
       args:
-        VERSION: "0.9.0"
-        SHA256_ARM64: "a74478d3d678b445777586014cd6529b27f0ff21dd54df5de9f1f3c5c8e02ac5"
-        SHA256_AMD64: "098fd9634264a4bbf8ac51399ca53de75e007ef56bb64a8c57379f379cb50da9"
+        VERSION: "0.9.1"
+        SHA256_ARM64: "b0c281b0cc00ab008b995c468f8662cbaae50a44480637b6ad856d98f55cdbb0"
+        SHA256_AMD64: "47ba396c8b53dfd2fe0cfdaea69df0d1384cf548cfb9fd05c24b077c6591a5e4"
     # A fixed name stops "up --scale" from starting a second daemon. A second store on this host
     # needs its own name and host port.
     container_name: mnem0nic

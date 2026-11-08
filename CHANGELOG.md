@@ -6,6 +6,29 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-08
+
+### Changed
+
+These three changes are for people running the memory service, in a container or on a server. The first is off
+unless you set a variable. The other two apply wherever their condition holds, on a Mac too: a machine with no
+`git` program, and a machine whose `config.toml` has a `listen` under `[http]`.
+
+- **`MNEM0NIC_DOOR_REQUIRED=1` makes a door that is not configured a failed start.** With the variable set to
+  `1`, `true`, `yes` or `on` (in any letter case; unset, or any other value, leaves it off),
+  `mnem0nic daemon serve` refuses to start, and says why, when `config.toml` cannot be read or has no `listen`
+  under `[http]`. Before, such a daemon started with no door, served nothing and exited after 15 minutes
+  idle, so a container restarted every 15 minutes with nothing wrong in its log. Without the variable the
+  start is as before.
+- **`mnem0nic search` and `mnem0nic resume` work where there is no `git` program.** Before, they stopped with
+  `No such file or directory (os error 2)` on a machine without `git`, as in the container image, unless the
+  search was run with `--all-projects`. A machine without `git` is now treated like a folder outside Git: its
+  branch is `no-git`.
+- **`mnem0nic doctor` passes on a memory service.** When `config.toml` has a `listen` under `[http]` and no
+  coding agent on the machine has mnem0nic's hooks, the "Hooks" check is now information ("no client hooks
+  here: this is a memory service") and no longer a failure, so `doctor` exits 0 on a healthy service. The
+  lines for each agent's hooks still warn. Without a `listen` under `[http]`, the check fails as before.
+
 ## [0.9.0] - 2026-11-08
 
 ### Added
@@ -435,7 +458,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.9.1
 [0.9.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.9.0
 [0.8.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.2
 [0.8.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.1

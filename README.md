@@ -383,12 +383,14 @@ an older one, as on a Mac. **Stop:** `docker compose stop`, and `docker compose 
 - **The environment file is not secret from the host.** Anyone who can run `docker inspect` there can read
   the token and the key.
 - **No sync.** The container's store is never paired; do not run `pair` or `sync` in it.
-- **A missing door setting is silent.** If `config.toml` is unreadable or has no `[http] listen`, the door is
-  simply off and the daemon exits after 15 minutes idle, so the container restarts every 15 minutes and serves
-  nothing. If `/ping` fails, check `docker compose logs mnem0nic` and that `config.toml` sets `[http] listen`.
-- **Some commands expect a Mac's setup.** In the container `doctor` reports that no client has hooks and exits
-  1, and `search` without `--all-projects` fails because the image has no `git`. Use the door's `/search`, or
-  `search --all-projects`, to look for records.
+- **A missing door setting stops the start.** The image sets `MNEM0NIC_DOOR_REQUIRED=1`, so if `config.toml` is
+  unreadable or has no `[http] listen` the daemon refuses to start and says why, and the container restarts
+  instead of serving nothing. Read the reason with `docker compose logs mnem0nic`. (This needs release 0.9.1 or
+  later, which the pinned version is.)
+- **Some commands expect a Mac's setup.** In the container `doctor` shows "no client hooks here: this is a
+  memory service" as information and exits 0, and `search`, `sessions` and `resume` work although the image has
+  no `git`. The command line `search` looks at conversations and checkpoints, so use the door's `/search` to
+  find records saved through the door.
 - **After a reboot,** Docker starts the service again with the host. Podman does so only with
   `podman-restart.service` enabled (`sudo systemctl enable podman-restart.service`; rootless:
   `systemctl --user enable podman-restart.service` and `loginctl enable-linger $USER`).
