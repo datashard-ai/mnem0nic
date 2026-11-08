@@ -6,6 +6,21 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-08
+
+### Added
+
+- **A Linux release file.** `mnem0nic-aarch64-unknown-linux-gnu.tar.gz` and its checksum are now published, so
+  `install.sh --system` installs the memory service on Linux on aarch64: the binary, a `mnem0nic` user and a
+  systemd service that is enabled but not started. The file holds the program, the licence and the third-party
+  notices for the Linux build. It is built with the same path-removal flags as the Mac file and scanned for
+  leaked paths before it is published.
+- **The Python client for the memory service's door** is now in this repository, in `clients/python/`: one
+  file, `mnem0nic.py`, with no dependencies, and a README. It repeats a `503` up to three times, raises
+  `Mnem0nicError` for any other failure, and sends the token only to the address you give it.
+
+The Mac program is unchanged apart from its version.
+
 ## [0.8.0] - 2026-11-08
 
 ### Added
@@ -397,7 +412,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.1
 [0.8.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.0
 [0.7.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.7.0
 [0.6.3]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.3

@@ -207,9 +207,10 @@ Linux machine: the same daemon and store, with an HTTP door for saving and searc
 through your own model provider. It is opt-in and off by default. Your Macs' install is not affected: they
 keep the subscription login, and nothing below applies to them.
 
-> **Availability.** The service is part of the same binary. It targets Linux on aarch64, and
-> `install.sh --system` is ready for it, but release 0.8.0 publishes the Mac file only. Until a Linux file is
-> published, `install.sh --system` stops at the download and installs nothing.
+> **Install.** On the Linux machine (aarch64), as root:
+> `curl -fsSL https://raw.githubusercontent.com/datashard-ai/mnem0nic/main/install.sh | sudo sh -s -- --system`.
+> It installs the binary in `/usr/local/bin`, creates a `mnem0nic` user and a systemd service that is enabled
+> but not started, and prints the steps to configure it. The Linux file is published from release 0.8.1.
 
 - **The door.** One small JSON API, `POST` only, with a bearer token: `/ping`, `/save`, `/search`,
   `/timeline`, `/work-state/write` and `/work-state/read`, with the meaning of the MCP tools of the same
@@ -262,8 +263,22 @@ curl -s -X POST http://127.0.0.1:8787/search \
 ```
 
 A save also takes `metadata` (an object, such as a run id) and `mode`; a search takes `limit`. A request
-with an `Origin` header is refused, and a body over 4 MiB is refused with a `400`. A one-file Python client
-without dependencies exists for the door, but 0.8.0 does not publish it.
+with an `Origin` header is refused, and a body over 4 MiB is refused with a `400`. 
+
+**The Python client** is one file with no dependencies, [`clients/python/mnem0nic.py`](clients/python/mnem0nic.py)
+in this repository: copy it into your project.
+
+```python
+import os
+from mnem0nic import Mnem0nic
+
+door = Mnem0nic("http://127.0.0.1:8787", os.environ["MNEM0NIC_HTTP_TOKEN"])
+door.save("a curlew flock turned north at dawn", title="Curlew turn")
+print(door.search("curlew flock")["text"])
+```
+
+It repeats a `503` up to three times, raises `Mnem0nicError` for any other failure, and sends the token only
+to the address you give it: no proxy from the environment, and no redirects.
 
 ## MCP Tools
 
