@@ -14,6 +14,7 @@
 <p align="center">
   <a href="https://github.com/datashard-ai/mnem0nic/releases/latest"><img src="https://img.shields.io/github/v/release/datashard-ai/mnem0nic?label=release&color=ea0026" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/macOS-Apple%20silicon-111111?logo=apple" alt="macOS on Apple silicon">
+  <img src="https://img.shields.io/badge/Linux%20aarch64-memory%20service-111111?logo=linux&logoColor=white" alt="Linux on aarch64, for the memory service">
   <img src="https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Codex-555555" alt="Works with Claude Code and Codex">
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/licence-proprietary-lightgrey" alt="Proprietary licence"></a>
 </p>
@@ -61,13 +62,25 @@ Then restart Claude Code or Codex. That's it.
 - **Coming from claude-mem?** `mnem0nic install` finds your claude-mem history and offers to import
   it. Press Enter.
 
-**Requirements:** a Mac with Apple silicon, and at least one of:
+**Requirements:** a Mac with Apple silicon (for Linux, see Platforms below), and at least one of:
 
 - **Claude Code**, signed in with a paid Claude plan (Pro, Max, Team or Enterprise);
 - **Codex**, signed in with a paid ChatGPT plan (Plus, Pro, Business, Enterprise or Edu).
 
 Running mnem0nic as a [memory service](#running-as-a-memory-service) on a server needs neither: it uses your
 own model provider and an API key instead.
+
+**Platforms:** mnem0nic is built and used daily on Macs with Apple silicon. The same program also runs on Linux
+on aarch64 (`install.sh` picks the right file). We ran its test suite on Linux aarch64 (release 0.8.2): all but two
+tests passed, and the two are tests of the macOS launch agent that memory sync uses. So on Linux:
+
+- the memory service is supported;
+- the personal tool (hooks for Claude Code and Codex, notes through your plan, search) is expected to work but has
+  not yet been used day to day on Linux;
+- syncing memory between machines (`mnem0nic pair`) is for Macs only: it relies on a macOS launch agent to listen
+  while idle, and Linux has no equivalent yet.
+
+Intel Macs, Windows and x86 Linux are not supported.
 
 ## Key Features
 
