@@ -6,6 +6,30 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-08
+
+### Added
+
+- **mnem0nic can run as a memory service for scripts and agent pipelines.** Configure `[http]` in `config.toml`
+  and the daemon serves a small JSON API over HTTP, behind a bearer token read from an environment variable:
+  `/ping`, `/save`, `/search`, `/timeline`, `/work-state/write` and `/work-state/read`, with the meaning of the
+  MCP tools of the same names. A save is written before the call returns, so a search sees it at once. The
+  door checks the token before it reads a request body, answers `503` while its 32 connections are in use,
+  refuses a request that carries an `Origin` header and a body over 4 MiB, and speaks plain HTTP, so keep it on
+  `127.0.0.1` or a private network. It is off by default, and nothing changes on your Macs. See Running as a
+  Memory Service in the README.
+- **Notes for that service are written through your own model provider.** A save with `"mode": "extract"`
+  queues a note written through any Anthropic-compatible `/v1/messages` endpoint you set in
+  `[observer] api_base_url`, with the key in `MNEM0NIC_OBSERVER_API_KEY`. This is the one place mnem0nic uses an
+  API key, set by you and billed per token by your provider; the cost is not tracked. The text, title and
+  metadata are redacted before they are stored or sent. The provider URL must be `https` (a provider on the same
+  machine excepted), and a redirect is never followed, so the key cannot be sent anywhere else. A save answers
+  `"extraction": "unavailable"` when no provider URL or key is set, and a save over the redaction limit (about a
+  million characters) is refused with a 400. The default `"mode": "verbatim"` calls no model.
+- **`install.sh --system` for Linux on aarch64** installs the binary and a systemd service that restarts when it
+  stops, and prints the steps to configure it. Release 0.8.0 publishes the Mac file only, so on Linux the
+  installer stops at the download until a Linux file is published.
+
 ## [0.7.0] - 2026-11-05
 
 ### Added
@@ -373,7 +397,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.0
 [0.7.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.7.0
 [0.6.3]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.3
 [0.6.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.6.2

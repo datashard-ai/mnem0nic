@@ -28,6 +28,7 @@
   <a href="#moving-from-claude-mem">Moving from claude-mem</a> •
   <a href="#how-it-works">How It Works</a> •
   <a href="#syncing-your-macs">Syncing Your Macs</a> •
+  <a href="#running-as-a-memory-service">Memory Service</a> •
   <a href="#mcp-tools">MCP Tools</a> •
   <a href="#privacy">Privacy</a> •
   <a href="#keeping-things-out">Keeping Things Out</a> •
@@ -65,6 +66,9 @@ Then restart Claude Code or Codex. That's it.
 - **Claude Code**, signed in with a paid Claude plan (Pro, Max, Team or Enterprise);
 - **Codex**, signed in with a paid ChatGPT plan (Plus, Pro, Business, Enterprise or Edu).
 
+Running mnem0nic as a [memory service](#running-as-a-memory-service) on a server needs neither: it uses your
+own model provider and an API key instead.
+
 ## Key Features
 
 - 🧠 **Memory across sessions.** A new session starts with the project's recent context, and your
@@ -83,7 +87,10 @@ Then restart Claude Code or Codex. That's it.
 - 🙈 **Keep things out.** Wrap text in `<private>` tags, or exclude a whole project, and it is never
   stored.
 - 💳 **Your own subscription.** Notes go through the paid plan you already use: your Claude plan for
-  Claude Code, your ChatGPT plan for Codex. Never an API key, so never a per-token bill.
+  Claude Code, your ChatGPT plan for Codex. Never an API key on your Macs, so never a per-token bill; the
+  opt-in [memory service](#running-as-a-memory-service) is the one exception, with a key you set.
+- 🖧 **A memory service, if you want one.** An HTTP door and a small Python client let scripts and agent
+  pipelines on a server share one memory, with notes written through your own model provider.
 - ⚡ **One native binary.** No Node.js, no Python, nothing left running when you're idle.
 
 ## Moving from claude-mem
@@ -156,7 +163,8 @@ flowchart LR
    the agent search past sessions, read notes and timelines, and keep to-do lists.
 
 A background process starts when it is needed, writes the notes, holds the embedding model, and exits
-after 15 idle minutes. It listens only on `127.0.0.1`, with a private token.
+after 15 idle minutes. It listens only on `127.0.0.1`, with a private token, unless you turn on the
+[memory service's](#running-as-a-memory-service) HTTP door.
 
 ## Syncing Your Macs
 
@@ -191,6 +199,71 @@ mnem0nic sync now                   # sync at once
 mnem0nic unpair "Mac name"          # stop syncing with one
 mnem0nic notes history NAME         # every version of a Claude Code note
 ```
+
+## Running as a Memory Service
+
+For scripts and agent pipelines that should share one memory, mnem0nic can run as a service on a small
+Linux machine: the same daemon and store, with an HTTP door for saving and searching, and notes written
+through your own model provider. It is opt-in and off by default. Your Macs' install is not affected: they
+keep the subscription login, and nothing below applies to them.
+
+> **Availability.** The service is part of the same binary. It targets Linux on aarch64, and
+> `install.sh --system` is ready for it, but release 0.8.0 publishes the Mac file only. Until a Linux file is
+> published, `install.sh --system` stops at the download and installs nothing.
+
+- **The door.** One small JSON API, `POST` only, with a bearer token: `/ping`, `/save`, `/search`,
+  `/timeline`, `/work-state/write` and `/work-state/read`, with the meaning of the MCP tools of the same
+  names. A save is written before the call returns, so a search sees it at once. The token comes from an
+  environment variable and is never stored. The door speaks plain HTTP, so bind it to `127.0.0.1` or a
+  private network interface and keep it off the open internet.
+- **Notes through your own provider.** A save with `"mode": "extract"` also queues a note, written by a
+  model through any Anthropic-compatible `/v1/messages` endpoint you name. This is the one place mnem0nic
+  uses an API key, set by you: the provider bills you per token, mnem0nic does not track the cost, and the
+  key is read only from the environment. The default `"mode": "verbatim"` stores the text as it is and
+  calls no model.
+- **Secrets are redacted first,** as for your Macs ([Redaction](#redaction)): text, title and metadata are
+  redacted before they are stored and before anything goes to the provider.
+
+```toml
+[http]
+listen = "127.0.0.1:8787"       # the door's address; leave out to keep it off
+project = "pipeline"            # the project this memory belongs to
+# token_env = "MNEM0NIC_HTTP_TOKEN"   # the variable that holds the token (this is the default)
+
+[observer]
+api_base_url = "https://api.example.com"   # your provider; /v1/messages is added
+model = "your-model-name"
+```
+
+Set `MNEM0NIC_HTTP_TOKEN` and `MNEM0NIC_OBSERVER_API_KEY` in the service's environment (the installer
+creates `/etc/mnem0nic/env`, readable only by root, for them), then start the service. The provider URL
+must be `https`, except for a provider on the same machine, and a redirect is never followed, so the key
+cannot be sent anywhere else. With the door on and no token set, the daemon refuses to start. The daemon
+does not exit when idle while the door is on. `sudo -u mnem0nic mnem0nic --home /var/lib/mnem0nic embed`
+downloads the search model, as on a Mac.
+
+`save` answers `{"ok": true, "extraction": ...}`: `"off"` for a verbatim save; for an extract save,
+`"queued"`, or no note at all, with the record saved either way: `"unavailable"` when no provider URL or key
+is set. A save whose `content` or `title` is over the redaction limit (1,048,576 UTF-16 units, about a million
+characters) is refused with a `400` and nothing is stored: split it. The door serves 32 connections at once.
+A `503` means the door is busy; it is answered before anything runs, so repeating it is always safe. Do not
+repeat other failed calls blindly: a repeated `extract` save queues a second paid note.
+
+Any HTTP client can call it:
+
+```sh
+curl -s -X POST http://127.0.0.1:8787/save \
+  -H "Authorization: Bearer $MNEM0NIC_HTTP_TOKEN" -H "Content-Type: application/json" \
+  -d '{"content": "a curlew flock turned north at dawn", "title": "Curlew turn"}'
+
+curl -s -X POST http://127.0.0.1:8787/search \
+  -H "Authorization: Bearer $MNEM0NIC_HTTP_TOKEN" -H "Content-Type: application/json" \
+  -d '{"query": "curlew flock"}'
+```
+
+A save also takes `metadata` (an object, such as a run id) and `mode`; a search takes `limit`. A request
+with an `Origin` header is refused, and a body over 4 MiB is refused with a `400`. A one-file Python client
+without dependencies exists for the door, but 0.8.0 does not publish it.
 
 ## MCP Tools
 
@@ -240,6 +313,10 @@ mnem0nic's own tools, over the word-for-word conversations:
   the results of memory tools, calls to Datashard's tools, text inside `<private>` tags, and secrets
   that redaction recognises.
 - **Nothing goes to us.** No account, no telemetry, no server of ours.
+- **The memory service,** if you run one: an `extract` save sends its text, title and metadata, after
+  redaction, to the provider URL you configured, with your own API key, and nothing else is sent. A
+  `verbatim` save is never sent anywhere. The door accepts saves from whoever holds its token, so keep the
+  token and the address private ([Running as a Memory Service](#running-as-a-memory-service)).
 - **Datashard:** calls to Datashard's tools are not stored at all, neither what was asked nor what
   came back, and the notes model never sees them. A tool counts when its name contains `datashard`,
   in any letter case, and a Codex `exec` script that calls one is left out too. Facts are fetched
@@ -447,6 +524,7 @@ Claude Code sessions that are already open keep the setting they started with, a
 downloaded later only after they restart. Do not put that line in a `config.toml` that an older
 mnem0nic also reads: it rejects the key, and cannot look up the project until the line is removed.
 
+The memory service has its own settings, under [Running as a Memory Service](#running-as-a-memory-service).
 Environment variables take precedence: `MNEM0NIC_OBSERVER_CLIENT`, `MNEM0NIC_OBSERVER_MODEL`,
 `MNEM0NIC_OBSERVER_CODEX_MODEL`, `MNEM0NIC_OBSERVER_PARALLEL`, `MNEM0NIC_SEMANTIC_INJECT` and
 `MNEM0NIC_SEMANTIC_INJECT_LIMIT` and `MNEM0NIC_RERANK`. `MNEM0NIC_REDACT_GENERIC` and
