@@ -205,10 +205,15 @@ in the background.
   next session start tells you.
 - **While you're idle,** macOS keeps the sync port open for mnem0nic and starts it only when your other
   Mac connects.
+- **Three or more Macs:** pair every pair. A Mac's notes reach another only when the two are on the same
+  network at the same time.
+- **Upgrading:** Macs on different versions keep syncing. A record a Mac can't read yet waits on it and is
+  added after you upgrade it; `mnem0nic doctor` says which Mac to upgrade. Bring every paired Mac to this
+  release before any later one.
 
 ```sh
 mnem0nic devices                    # your paired Macs, and when each was last seen
-mnem0nic sync status                # how far behind each one is
+mnem0nic sync status                # how far behind each one is, and what waits for an upgrade
 mnem0nic sync now                   # sync at once
 mnem0nic unpair "Mac name"          # stop syncing with one
 mnem0nic notes history NAME         # every version of a Claude Code note

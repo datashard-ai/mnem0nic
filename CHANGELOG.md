@@ -6,6 +6,36 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-12
+
+### Added
+
+- **Each Mac tells the other which version it runs.** When two Macs sync, each now says its sync version and its
+  mnem0nic version. `mnem0nic sync status` shows both for every paired Mac, with how many of its records wait
+  here for an upgrade, and `mnem0nic doctor` adds them to its sync lines. A Mac that says nothing (0.9.1 and
+  older) counts as sync version 0, and the two keep syncing both ways.
+- **A record a Mac can't read yet is kept, and added after you upgrade it.** Before, a Mac that met a kind of
+  record it did not know tried three times, quarantined it and went on, and nothing sent the record again after
+  the upgrade. Now, when the sender is on a newer sync version, the record is kept whole and set aside, the
+  records after it keep arriving, and `mnem0nic doctor` warns, names the Mac that sent them and says to upgrade
+  the Mac that holds them. The next start of the background process after the upgrade, or the next sync, adds
+  the record, with no need for the other Mac to be there. A record that fails to apply is tried again and
+  quarantined after three failures, as before. This release adds no new kind of record, so none is set aside
+  between Macs on this release.
+
+### Changed
+
+- **Records an earlier release quarantined as an unknown kind come back, once.** The first time this release
+  opens a store, the log of each paired Mac with such a quarantined record is taken again from its start.
+  Records already held are matched and skipped, so nothing doubles. It costs one pass over that Mac's log.
+  Records quarantined for any other reason are tried once more in that pass.
+- **A background process of a different build is stopped.** An older process cannot open the upgraded store.
+  Now the first command that upgrades the store asks a background process of a different build to finish its
+  job and exit, and a hook that finds one does the same, then starts a new one as soon as the old one has
+  gone. Before, a hook only woke the old process.
+- **The store format moves to 8.** An older mnem0nic can't open a store this release has opened, and says so;
+  there is no downgrade.
+
 ## [0.9.1] - 2026-11-08
 
 ### Changed
@@ -458,7 +488,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.10.0
 [0.9.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.9.1
 [0.9.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.9.0
 [0.8.2]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.8.2
