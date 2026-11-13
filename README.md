@@ -210,6 +210,9 @@ in the background.
 - **Upgrading:** Macs on different versions keep syncing. A record a Mac can't read yet waits on it and is
   added after you upgrade it; `mnem0nic doctor` says which Mac to upgrade. Bring every paired Mac to this
   release before any later one.
+- **Same version?** `mnem0nic doctor` and `mnem0nic sync status` say whether each paired Mac runs the
+  same mnem0nic as this one. `doctor` warns, naming the Mac to upgrade, only when the sync versions
+  differ; when just the mnem0nic version differs it notes it and does not warn.
 
 ```sh
 mnem0nic devices                    # your paired Macs, and when each was last seen

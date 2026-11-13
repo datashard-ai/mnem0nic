@@ -6,6 +6,16 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-11-13
+
+### Added
+
+- **`mnem0nic doctor` and `mnem0nic sync status` now say whether each paired Mac runs the same mnem0nic as
+  this one.** `doctor` warns, naming the Mac to upgrade, when the two sync versions differ, because only then
+  can records wait for an upgrade. When only the mnem0nic version differs it notes both versions and does not
+  warn, since Macs upgraded on different days are normal and sync fine. `sync status` shows `same_version` for
+  every paired Mac (`null` until it has said its version) and the version of this Mac's mnem0nic at the top.
+
 ## [0.10.0] - 2026-11-12
 
 ### Added
@@ -488,7 +498,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.10.1
 [0.10.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.10.0
 [0.9.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.9.1
 [0.9.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.9.0
