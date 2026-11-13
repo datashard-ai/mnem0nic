@@ -9,9 +9,9 @@ ARG BASE=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c
 # Stage 1: download and verify. curl and the CA certificates stay in this stage.
 FROM ${BASE} AS fetch
 ARG TARGETARCH
-ARG VERSION=0.9.1
-ARG SHA256_ARM64=b0c281b0cc00ab008b995c468f8662cbaae50a44480637b6ad856d98f55cdbb0
-ARG SHA256_AMD64=47ba396c8b53dfd2fe0cfdaea69df0d1384cf548cfb9fd05c24b077c6591a5e4
+ARG VERSION=0.10.0
+ARG SHA256_ARM64=54e83161953a2bcf037a89b59e881f84546cda0bd9d60f045d94b4a074c506b9
+ARG SHA256_AMD64=f6226ef33245dff11ce7214a1c391053943fb14c23c924aeceba50db297eeada
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
