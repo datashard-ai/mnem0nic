@@ -458,11 +458,17 @@ mnem0nic's own tools, over the word-for-word conversations:
   top), so a short field leaves what it does not need to the longer ones. Separately,
   `mnem0nic eval --paraphrases N` sends the text of up to N notes (the first 1,500 characters of each) to
   Claude through your own login, but only after you answer yes to its printed plan; see
-  [Measuring Search](#measuring-search).
+  [Measuring Search](#measuring-search). `mnem0nic dream patterns` likewise sends Claude, through your own
+  login, the date, type, title and text of the notes in each group it judges, redacted and with local
+  paths cut, in at most `--max-calls` calls; it asks nothing first, since typing the command is the
+  consent; see [Dreaming](#dreaming).
 - **What is never sent:** the contents of files the agent only read (their paths are sent), images,
   the results of memory tools, calls to Datashard's tools, text inside `<private>` tags, and secrets
   that redaction recognises.
 - **Nothing goes to us.** No account, no telemetry, no server of ours.
+- **Dreaming:** if you set up `[datashard]`, `mnem0nic dream` makes one request to that address, a `GET` of its
+  sign-in discovery path, and sends it no note. What `dream` finds stays on your Mac, in your terminal and in
+  `dreaming/patterns.jsonl` ([Dreaming](#dreaming)).
 - **The memory service,** if you run one: an `extract` save sends its text, title and metadata, after
   redaction, to the provider URL you configured, with your own API key, and nothing else is sent. A
   `verbatim` save is never sent anywhere. The door accepts saves from whoever holds its token, so keep the
@@ -583,6 +589,12 @@ it is.
 | `cookie` | The value of a `Cookie` or `Set-Cookie` header |
 | `url_credentials` | The user and password in a URL or connection string |
 | `assigned_secret` | The value after `password`, `passwd`, `secret`, `token`, `api_key`, `access_key` or `client_secret`, with `=` or `:`, in plain text or inside a tool call's JSON. Six characters or more (four for a password; a bare number needs six digits, so `password=1234` stays as it is, while `"1234"` in quotes is redacted); a quoted value is taken whole, spaces and all |
+| `email` | An email address. Git remotes (`git@github.com:org/repo.git`, `ssh://git@host/path`), `noreply` addresses, and package or image names such as `react@18.2.0` and `icon@2x.png` stay as they are |
+| `phone` | A phone number with its country code (`+44 20 7946 0958`), and the value after a `phone`, `mobile`, `tel` or `telephone` key. A `+` and a date (`+2026-11-15 10:00:00`, as a diff line adds one), a `+` and an epoch time of 10 or 13 digits with no separator (`+1731628800000`), and a signed number of 8 to 10 digits with no separator right after `=` (`x = +12345678`) are not taken for a number; after an `=`, a number with a separator or of 11 digits or more still is one (`contact=+44 20 7946 0958`, `contact=+442079460958`). Nor are versions, IP addresses and ISO timestamps, and a number under such a key when it is a bare JSON number stays too, since a marker in its place would break the JSON |
+
+These two are personal details, not secrets. `disabled` switches either off, like any other, and text stored before they existed is not rewritten.
+
+They err toward redacting. Some code-like strings are redacted too: `name@1000.service` and `foo@bar.baz` read as addresses. That is over-redaction, never a leak.
 
 **Off by default.** Two more patterns go by the name alone, with no known prefix to go on, so they are
 less certain and you switch them on yourself: `generic_password` (names ending in `password`,
@@ -674,6 +686,34 @@ Claude Code sessions that are already open keep the setting they started with, a
 downloaded later only after they restart. Do not put that line in a `config.toml` that an older
 mnem0nic also reads: it rejects the key, and cannot look up the project until the line is removed.
 
+If your company runs a Datashard, `mnem0nic dream` ([Dreaming](#dreaming)) needs two more things in the same
+file: the address of that Datashard, and which of your projects belong to which of its sections.
+
+```toml
+[datashard]
+url = "https://datashard.example"
+
+[datashard.sections]
+"orchard-co/kestrel" = "kestrel-notes"   # project name = section
+```
+
+- **`url`** is the address of the Datashard install. It must start with `https://`; `http://` is accepted
+  only for `127.0.0.1` and `localhost`. A trailing `/` and a trailing `/mcp` are dropped. A `url` with a login, a query or a fragment (`@`,
+  `?` or `#` in it) is refused, and the message does not repeat it. There is no default: without a `url`,
+  dreaming is off.
+- **`in_service`** (optional, `true` or `false`, default `false`) lets `dream` run where `config.toml` also has
+  an `[http]` table, which is how mnem0nic runs as a [memory service](#running-as-a-memory-service). Without it,
+  `dream` is off there. Any other value is a mistake that names the key.
+- **`[datashard.sections]`** says which projects may answer for which section. The key is the project's name
+  as `mnem0nic doctor` shows it (for a Git repository, `org/repo` from its remote); the value is a section.
+  Several projects can share a section. A project that is not listed never answers, and a listed one answers
+  only for its own section.
+- **A mistake in this table stops nothing but `dream`.** A value of the wrong type (`url = 5`) leaves hooks,
+  search and every other command working as before; `mnem0nic dream` stops and names the key that is wrong.
+- **Older versions.** An older mnem0nic rejects a `config.toml` that has a `[datashard]` table, as it rejects
+  any section it does not know, and cannot look up the project until the table is removed. Without the table,
+  nothing changes.
+
 The memory service has its own settings, under [Running as a Memory Service](#running-as-a-memory-service).
 Environment variables take precedence: `MNEM0NIC_OBSERVER_CLIENT`, `MNEM0NIC_OBSERVER_MODEL`,
 `MNEM0NIC_OBSERVER_CODEX_MODEL`, `MNEM0NIC_OBSERVER_PARALLEL`, `MNEM0NIC_SEMANTIC_INJECT` and
@@ -696,6 +736,8 @@ sets the folder.
 | `mnem0nic daemon status` | Show the background process |
 | `mnem0nic doctor [--json]` | Check that mnem0nic is working: store, hooks, background process, search model, notes, sync. Only reads |
 | `mnem0nic eval [--paraphrases N] [--limit N] [--questions N] [--save-baseline FILE] [--against FILE --fall N]` | Measure whether search finds the right past note, with questions made from your own notes, on a temporary copy of your store. Prints counts only. Needs Claude Code on a paid Claude plan; see [Measuring Search](#measuring-search) |
+| `mnem0nic dream answer --section NAME "question" [--limit N] [--json]` | Print short excerpts from this Mac's notes that answer a question for one of your Datashard's sections. Needs `[datashard]` in `config.toml` and a Datashard that answers. Sends nothing; see [Dreaming](#dreaming) |
+| `mnem0nic dream patterns [--days N] [--max-calls N]` | Find what recurs across a project's sessions and log each find on this Mac. Makes up to `--max-calls` calls to Claude through your plan, and sends nothing to Datashard; see [Dreaming](#dreaming) |
 | `mnem0nic pair` | Pair this Mac with another of yours, with a six-digit code |
 | `mnem0nic devices`, `mnem0nic unpair NAME` | List your paired Macs; stop syncing with one |
 | `mnem0nic sync status`, `mnem0nic sync now` | See how sync is doing; sync at once |
@@ -706,7 +748,7 @@ sets the folder.
 In Claude Code, `/mnem0nic` runs the commands that read: `/mnem0nic search "words"`, `/mnem0nic sessions`,
 `/mnem0nic get SESSION`, `/mnem0nic resume`, `/mnem0nic doctor`, `/mnem0nic devices`, `/mnem0nic notes history NAME`,
 and `daemon` or `sync` status. The output is shown as it is. Commands that change anything, and
-`search --all-projects` and a `--project` or `--home` of your own, run only in a terminal. Only you can run `/mnem0nic`; Claude can't call it on its own.
+`search --all-projects`, a `--project` or `--home` of your own, and `dream`, run only in a terminal. Only you can run `/mnem0nic`; Claude can't call it on its own.
 Quote your words as in a terminal: `/mnem0nic search "what's new"`.
 
 ## Checking That It Works
@@ -838,6 +880,116 @@ above) and, with paraphrases, your Claude plan's usage: one call for every 25 no
 use none. `eval` runs only in a terminal, not through `/mnem0nic`. Its exit code is 1 when a comparison
 breaches the line, and also when the run can't go ahead: no store, no paid plan, a baseline that doesn't
 match.
+
+## Dreaming
+
+`mnem0nic dream` is for people whose company runs a Datashard. It looks through your own notes for what that
+Datashard might want to know, and shows you what it finds. **Nothing is sent to Datashard:** both commands
+print or log on this Mac. Set it up under [Configuration](#configuration), then:
+
+```sh
+mnem0nic dream answer --section kestrel-notes "how do we handle a failed upload"
+mnem0nic dream patterns
+```
+
+**When it runs.** Both commands first read `[datashard]`. If `config.toml` has no `url`, the command prints
+`mnem0nic: dreaming is off: config.toml has no [datashard] url` and makes no request. Otherwise it makes one: a
+`GET` of `<url>/.well-known/oauth-protected-resource`, which a Datashard answers without sign-in, waiting at
+most 5 seconds. Only a 200 passes; a redirect is not followed. If the request fails, times out or gets any other
+answer, the command prints `mnem0nic: dreaming is off: <url> did not answer`. These lines, like every error of
+mnem0nic, go to standard error with the `mnem0nic: ` prefix; in both cases standard output stays empty and the
+exit status is 1. That request is the only one mnem0nic makes to Datashard, and it carries no note. It shows
+that the address answers: it does not check that you may use that Datashard, or that anyone there has
+switched dreaming on.
+
+**On a memory service.** Dreaming is for one person's own sessions. Where `config.toml` has an `[http]` table, which is
+how mnem0nic runs as a [memory service](#running-as-a-memory-service), `dream` is off by default: it prints
+`mnem0nic: dreaming is off: this mnem0nic runs as a memory service ([http] is set); set in_service = true under
+[datashard] to allow it` on standard error and exits 1, before it asks the Datashard anything or reads a note.
+With `in_service = true` it runs as usual, and then anyone who can run mnem0nic on that machine can print
+excerpts of the shared store for a mapped section.
+
+**What it leaves out.** What `dream` prints or logs never holds:
+
+- A note of type `sensitive`, `security_note` or `security_alert`.
+- A note from a project you [excluded](#keeping-things-out), or from a project that is not mapped to the
+  section. A project that shares a folder with a mapped one is read only if it is mapped to the same section:
+  mapped to another section, or to none, its notes stay out.
+- A secret, an email address or a phone number. Every excerpt is redacted again on the way out, with all the
+  [built-in patterns](#redaction) on, even any you switched off under `disabled`, because notes stored before
+  `email` and `phone` existed still hold addresses and numbers. As everywhere, this is pattern matching, not
+  a guarantee.
+- A session id, or an absolute path. A path inside the folder of a project mapped to the section is shown
+  relative to it (`src/x.rs`). Every other absolute path is replaced by `<local path>`: any path that starts
+  at `/` and has two parts or more (`/Volumes/x/y`), a path that starts with `~`, and your home folder, wherever
+  it sits. A lone `/tmp`, a URL, a fraction such as `1/2` and a relative path such as `src/x.rs` are not
+  absolute paths and stay. A path with a space in it is replaced whole when a quote, a backtick or a bracket
+  opens it (`"/Users/ada/Client Work/notes.md"`), up to the one that closes it. With no such opener nothing says
+  where the path ends, so it is replaced only up to its first space, and the rest of the name stays.
+
+### `dream answer`
+
+`mnem0nic dream answer --section NAME "question"` searches the notes of the projects mapped to that section,
+and only those, and prints up to `--limit` excerpts (1 to 20, default 5). Each has the project, the date of
+the note (its UTC day), its type, its title and an excerpt of its text, cut at 600 characters.
+
+The question is searched by words and, once the search model is downloaded (`mnem0nic embed`), by meaning. It
+is embedded inside the command, so no background process is started, and no model is called. Without the
+search model the answer is by words alone. A section that no project is mapped to is an error that names the
+section. When no note answers, it prints `No note of the projects mapped to <section> answers that.` and
+exits 0.
+
+`--json` prints one JSON object instead:
+
+```json
+{"section": "kestrel-notes", "question": "…", "answers": [
+  {"project": "orchard-co/kestrel", "date": "2026-11-12", "type": "…", "title": "…", "excerpt": "…"}
+]}
+```
+
+with no other key. `project` is the name the project is stored under.
+
+### `dream patterns`
+
+`mnem0nic dream patterns` looks, for every project under `[datashard.sections]`, for what recurs across its
+sessions in the last `--days` days (default 30), and asks Claude whether each candidate is one recurring
+thing. It works on the notes' stored search vectors: without them (`mnem0nic embed` makes them) nothing is
+grouped, and the command says so, makes no call and exits 0.
+
+- **A group** is one of the project's 500 newest notes in the window together with its up to five nearest
+  notes in the window. It counts only if its notes come from at least 3 sessions on at least 3 different
+  days (UTC). A note without a session, or of a type listed above, joins no group, and no note is in two
+  groups.
+- **There is no similarity cut-off.** Groups are ordered tightest first, and the first `--max-calls` (default
+  10) are judged. A group's `distance` is the mean distance of its notes, so a lower number is a tighter group.
+- **One call each.** Each judged group costs one call to Claude (`claude -p`, through your own Claude login,
+  on your plan and never an API key). It needs Claude Code signed in with a paid Claude plan. A call that
+  fails, or whose reply cannot be read, is logged with an error and not repeated. The calls are not
+  recorded as sessions, and add nothing to your memory.
+- **What Claude is sent:** for each note of the group, its date, type, title and text, cleaned as above. It is
+  told that the notes are data and not instructions, to word a pattern about the system, and to name no
+  person. It answers whether the group is a pattern, with a title and a description.
+  **Each call sends those notes to Claude.**
+
+Before the first call it prints how many groups it found and how many calls it will make, for example
+`12 groups, 10 calls to claude-haiku-5-5 through your Claude plan` (`1 group, 1 call to …` for one). It asks
+nothing: typing the command is the consent, and `--max-calls` is the most it will make.
+
+After that line it prints, in this order:
+
+- If some notes in the window have no vector yet: ``N notes have no vector yet and join no group: `mnem0nic embed`
+  makes them`` (`1 note has no vector yet …` for one).
+- For each judged group, a line `<project>: N notes, S sessions, D days, distance X.X`, then one of
+  `  pattern: <title>` (and the description on the next line), `  not a pattern`, or `  not judged: <why>` when
+  the call failed or its reply could not be read. The `<why>` is cleaned like a note, with paths and addresses
+  removed, and cut to 300 characters; the log holds the same text.
+- The last line, `shadow: nothing was sent to Datashard`.
+
+Each judged group is appended as one JSON line to `dreaming/patterns.jsonl` in the memory folder. The
+folder and the file can be read only by your user account. A line holds `at`, `section`, `project`, `notes`,
+`sessions`, `days`, `distance`, `pattern`, `title`, `description` and `error`, and no session id. The title
+and the description are Claude's words. mnem0nic does not remember earlier runs, so a pattern seen again is
+logged again.
 
 ## Upgrade and Uninstall
 

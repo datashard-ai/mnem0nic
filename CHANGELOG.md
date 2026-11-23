@@ -6,6 +6,54 @@ All notable changes to mnem0nic are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-23
+
+### Added
+
+- **`mnem0nic dream answer` prints excerpts from your notes that answer a question for one of your Datashard's
+  sections.** `mnem0nic dream answer --section NAME "question"` searches only the projects mapped to that
+  section and prints up to `--limit` excerpts (1 to 20, default 5), each with the project, the note's date
+  (UTC day), its type, its title and up to 600 characters of its text. `--json` prints the same as one JSON
+  object with the keys `section`, `question` and `answers`. The question is searched by words and, with the
+  search model downloaded, by meaning, inside the command: no background process is started and no model is
+  called. Notes of type `sensitive`, `security_note` and `security_alert`, notes of an excluded project and
+  session ids never appear; each excerpt is redacted again on the way out, with every built-in pattern on. A
+  path inside the folder of a mapped project is shown relative to it, and every other absolute path (two
+  parts or more from `/`, a path from `~`, your home folder) becomes `<local path>`. A path with a space in it
+  is replaced whole only when a quote, a backtick or a bracket opens it. A project that shares a folder with a
+  mapped one is read only if it is mapped to the same section. When no note answers it prints
+  `No note of the projects mapped to <section> answers that.` and exits 0. Nothing is sent to Datashard.
+- **`mnem0nic dream patterns` finds what recurs across a project's sessions and logs it on this Mac.** For each
+  mapped project it groups the notes of the last `--days` days (default 30) by their stored search vectors: a
+  group is a note and its nearest notes, and counts only with at least 3 sessions on at least 3 different
+  days. There is no similarity cut-off; the tightest groups come first and the first `--max-calls` (default
+  10) each make one call to Claude (`claude -p`, through your own Claude login, on your plan and never an API
+  key), which says whether the group is one recurring thing and words it about the system, naming no person.
+  Each call sends the group's notes, redacted and with local paths cut, to Claude. The command prints how many
+  groups and calls there will be before it makes any, asks nothing, then prints the notes without a vector
+  yet, if any, and each judged group (`<project>: N notes, S sessions, D days, distance X.X` and its verdict
+  or why it was not judged), and ends with `shadow: nothing was sent to Datashard`. Each judged group is appended to `dreaming/patterns.jsonl` in the memory folder
+  (readable only by you), with its distance, so you can see how tight a real pattern is. It needs Claude
+  Code signed in with a paid Claude plan and the notes' search vectors (`mnem0nic embed`).
+- **A `[datashard]` table in `config.toml` turns dreaming on.** `url` is the address of your Datashard (`https`,
+  or `http` only on `127.0.0.1` and `localhost`) and `[datashard.sections]` maps a project name to a section.
+  Both `dream` commands make one request before they run, a `GET` of
+  `<url>/.well-known/oauth-protected-resource` that must answer 200 within 5 seconds with no redirect followed,
+  and otherwise print `mnem0nic: dreaming is off: <url> did not answer` on standard error and exit 1; with no
+  `url` they print `mnem0nic: dreaming is off: config.toml has no [datashard] url` and exit 1. A `url` with a
+  login, a query or a fragment is refused. Where `config.toml` has an `[http]` table, which is how mnem0nic runs
+  as a memory service, `dream` is off unless `[datashard]` says `in_service = true`; then anyone who can run
+  mnem0nic on that machine can print excerpts of the shared store for a mapped section. A mistake in the
+  table stops no hook and no other command, only `dream`, which names the key. An older mnem0nic rejects a `config.toml` that has a
+  `[datashard]` table, and cannot look up the project until it is removed.
+- **Email addresses and phone numbers are redacted when text is stored.** Two new built-in patterns, `email` and
+  `phone`, replace an address or a phone number with its country code with `<redacted type='NAME'/>`, like
+  every other built-in. Git remotes, `noreply` addresses, package and image names such as `react@18.2.0`,
+  versions, IP addresses, ISO timestamps, a `+` and a date or an epoch time (`+2026-11-15`, `+1731628800000`)
+  and a short signed number (8 to 10 digits, no separator) right after `=` stay as they are. Some code-like
+  strings are redacted too (`name@1000.service`, `foo@bar.baz`): over-redaction, never a leak. `disabled`
+  switches either off. Text stored before this release is not rewritten.
+
 ## [0.10.1] - 2026-11-13
 
 ### Added
@@ -498,7 +546,8 @@ First public release.
   your history over.
 - **Install script** that checks each download's SHA-256 checksum.
 
-[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/datashard-ai/mnem0nic/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.11.0
 [0.10.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.10.1
 [0.10.0]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.10.0
 [0.9.1]: https://github.com/datashard-ai/mnem0nic/releases/tag/v0.9.1
